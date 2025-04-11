@@ -1,0 +1,18 @@
+
+project_id = "nrpheailknubabyvsggy"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[functions.fetch-gallery-images]
+verify_jwt = false
