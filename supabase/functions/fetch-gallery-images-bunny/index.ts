@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error("Missing Bunny.net credentials");
     }
 
-    console.log(`Connecting to Bunny.net storage zone: ${bunnyStorageZone}`);
+    console.log(`Connecting to Bunny.net storage zone: ${bunnyStorageZone}, pull zone: ${bunnyPullZone}`);
 
     // Fetch image list from Bunny.net storage
     const bunnyApiUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/gallery/`;

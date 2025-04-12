@@ -26,11 +26,12 @@ export function getOptimizedImageUrl(url: string, width?: number, height?: numbe
       params.push(`height=${height}`);
     }
     
-    // Add image optimization parameters
+    // Add more image optimization parameters for Bunny.net
     if (params.length > 0) {
-      return `${url}?${params.join('&')}&format=webp&quality=85`;
+      // Apply webp format for better compression and quality settings
+      return `${url}?${params.join('&')}&format=webp&quality=80&optimize=medium`;
     } else {
-      return `${url}?format=webp&quality=85`;
+      return `${url}?format=webp&quality=80&optimize=medium`;
     }
   }
   
