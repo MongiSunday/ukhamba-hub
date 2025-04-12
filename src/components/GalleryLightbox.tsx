@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GalleryItem } from '@/data/gallery/images';
+import { getOptimizedImageUrl } from '@/lib/utils';
 
 interface GalleryLightboxProps {
   isOpen: boolean;
@@ -45,9 +46,10 @@ const GalleryLightbox = ({
           <div className="flex-1 overflow-hidden relative">
             <div className="flex items-center justify-center h-full p-2">
               <img 
-                src={item.imageUrl} 
+                src={getOptimizedImageUrl(item.imageUrl, 1200)} 
                 alt={item.title} 
                 className="max-h-[60vh] max-w-full object-contain"
+                loading="eager"
               />
             </div>
 

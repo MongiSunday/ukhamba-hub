@@ -14,68 +14,57 @@ export async function fetchGalleryImages(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('Fetching gallery images from Supabase storage');
+    console.log('Fetching gallery images from Bunny.net via Edge Function');
     
-    // First, get all top-level folders (categories)
-    const { data: topLevelData, error: topLevelError } = await supabase
-      .storage
-      .from('gallery')
-      .list('', {
-        sortBy: { column: 'name', order: 'asc' }
-      });
+    // Use the new Supabase Edge Function that connects to Bunny.net
+    const { data, error } = await supabase.functions.invoke("fetch-gallery-images-bunny", {
+      method: "GET",
+    });
 
-    if (topLevelError) {
-      console.error('Error fetching top-level folders:', topLevelError);
-      throw new Error(`Failed to fetch gallery categories: ${topLevelError.message}`);
+    if (error) {
+      console.error('Error calling fetch-gallery-images-bunny function:', error);
+      throw new Error(`Failed to fetch gallery images: ${error.message}`);
     }
 
-    // Filter to get only folders (items without mimetype)
-    const categoryFolders = topLevelData.filter(item => !item.name.includes('.'));
-    console.log(`Found ${categoryFolders.length} category folders:`, categoryFolders.map(f => f.name));
-    
-    if (categoryFolders.length === 0) {
-      console.warn('No category folders found in gallery bucket');
-      throw new Error('No category folders found in gallery bucket');
+    if (!data || data.length === 0) {
+      console.warn('No images returned from the gallery function');
+      throw new Error('No images found in the gallery');
     }
 
+    console.log(`Received ${data.length} gallery items from Bunny.net`);
+
+    // Process the returned data to extract categories and subcategories
     const uniqueCategories = new Set<string>();
     const subcategoriesByCategory: Record<string, Set<string>> = {};
-    const galleryImages: GalleryItem[] = [];
     
-    // Process each category folder
-    for (const categoryFolder of categoryFolders) {
-      const categoryId = categoryFolder.name;
-      uniqueCategories.add(categoryId);
+    // Add category and subcategory metadata to the items
+    const galleryImages: GalleryItem[] = data.map((item: GalleryItem) => {
+      uniqueCategories.add(item.categoryId);
       
-      // Get contents of the category folder
-      const { data: categoryContents, error: categoryError } = await supabase
-        .storage
-        .from('gallery')
-        .list(categoryId, {
-          sortBy: { column: 'name', order: 'asc' }
-        });
-        
-      if (categoryError) {
-        console.error(`Error fetching contents of category ${categoryId}:`, categoryError);
-        continue;
+      if (item.subcategoryId) {
+        if (!subcategoriesByCategory[item.categoryId]) {
+          subcategoriesByCategory[item.categoryId] = new Set<string>();
+        }
+        subcategoriesByCategory[item.categoryId].add(item.subcategoryId);
       }
-
-      console.log(`Category ${categoryId} has ${categoryContents.length} items`);
       
-      // Filter out placeholder files
-      const filteredCategoryContents = categoryContents.filter(item => 
-        !item.name.includes('.emptyFolderPlaceholder')
-      );
+      // Enhance description using our local category/subcategory descriptions
+      const categoryName = formatDisplayName(item.categoryId);
+      const categoryDesc = categoryDescriptions[item.categoryId] || '';
       
-      await processContents(
-        filteredCategoryContents, 
-        categoryId,
-        galleryImages,
-        subcategoriesByCategory
-      );
-    }
-
-    console.log(`Processed a total of ${galleryImages.length} gallery images`);
+      let description = `${categoryDesc} - ${categoryName}`;
+      
+      if (item.subcategoryId) {
+        const subcategoryName = formatDisplayName(item.subcategoryId);
+        const subcategoryDesc = subcategoryDescriptions[item.categoryId]?.[item.subcategoryId] || '';
+        description = `${subcategoryDesc} - ${categoryName}: ${subcategoryName}`;
+      }
+      
+      return {
+        ...item,
+        description
+      };
+    });
     
     // Convert Sets to arrays for categories and subcategories
     const categoriesArray = Array.from(uniqueCategories);
@@ -85,132 +74,63 @@ export async function fetchGalleryImages(): Promise<{
       subcategoriesRecord[category] = Array.from(subcategorySet);
     });
 
+    console.log(`Processed ${galleryImages.length} gallery images with ${categoriesArray.length} categories`);
+    
     return {
       images: galleryImages,
       categories: categoriesArray,
       subcategories: subcategoriesRecord
     };
   } catch (err) {
-    console.error('Error fetching gallery images:', err);
-    return {
-      images: [],
-      categories: [],
-      subcategories: {},
-      error: err instanceof Error ? err.message : 'Unknown error fetching gallery images'
-    };
-  }
-}
-
-/**
- * Process the contents of a category folder
- */
-async function processContents(
-  contents: any[],
-  categoryId: string,
-  galleryImages: GalleryItem[],
-  subcategoriesByCategory: Record<string, Set<string>>
-): Promise<void> {
-  for (const item of contents) {
-    if (!item.name.includes('.')) {
-      // This is likely a subcategory folder
-      await processSubcategory(
-        item,
-        categoryId,
-        galleryImages,
-        subcategoriesByCategory
-      );
-    } else if (item.metadata?.mimetype?.startsWith('image/') || 
-              item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      // This is a direct image in the category folder
-      processDirectCategoryImage(
-        item,
-        categoryId,
-        galleryImages
-      );
-    }
-  }
-}
-
-/**
- * Process a subcategory folder and its images
- */
-async function processSubcategory(
-  item: any,
-  categoryId: string,
-  galleryImages: GalleryItem[],
-  subcategoriesByCategory: Record<string, Set<string>>
-): Promise<void> {
-  const subcategoryId = item.name;
-  
-  if (!subcategoriesByCategory[categoryId]) {
-    subcategoriesByCategory[categoryId] = new Set<string>();
-  }
-  subcategoriesByCategory[categoryId].add(subcategoryId);
-  
-  // Get images from this subcategory
-  const { data: subcategoryImages, error: subcategoryError } = await supabase
-    .storage
-    .from('gallery')
-    .list(`${categoryId}/${subcategoryId}`, {
-      sortBy: { column: 'name', order: 'asc' }
-    });
+    console.error('Error fetching gallery images from Bunny.net:', err);
     
-  if (subcategoryError) {
-    console.error(`Error fetching images from subcategory ${categoryId}/${subcategoryId}:`, subcategoryError);
-    return;
-  }
-
-  // Filter out placeholder files
-  const filteredSubcategoryImages = subcategoryImages.filter(image => 
-    !image.name.includes('.emptyFolderPlaceholder')
-  );
-
-  console.log(`Subcategory ${categoryId}/${subcategoryId} has ${filteredSubcategoryImages.length} images`);
-  
-  // Add each image from this subcategory
-  filteredSubcategoryImages.forEach((image, index) => {
-    if (image.metadata?.mimetype?.startsWith('image/') || 
-        image.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      
-      const imageUrl = supabase.storage
-        .from('gallery')
-        .getPublicUrl(`${categoryId}/${subcategoryId}/${image.name}`).data.publicUrl;
-      
-      const galleryItem = createGalleryItemFromMetadata({
-        image,
-        index,
-        categoryId,
-        subcategoryId,
-        imageUrl,
-        categoryDescriptions,
-        subcategoryDescriptions
+    // Fall back to the original Supabase implementation
+    try {
+      console.log('Falling back to Supabase R2 edge function');
+      const { data, error } = await supabase.functions.invoke("fetch-gallery-images", {
+        method: "GET",
       });
       
-      galleryImages.push(galleryItem);
+      if (error) throw error;
+      
+      // Process the data similar to above to extract categories and subcategories
+      const uniqueCategories = new Set<string>();
+      const subcategoriesByCategory: Record<string, Set<string>> = {};
+      
+      const galleryImages = data.map((item: GalleryItem) => {
+        uniqueCategories.add(item.categoryId);
+        
+        if (item.subcategoryId) {
+          if (!subcategoriesByCategory[item.categoryId]) {
+            subcategoriesByCategory[item.categoryId] = new Set<string>();
+          }
+          subcategoriesByCategory[item.categoryId].add(item.subcategoryId);
+        }
+        
+        return item;
+      });
+      
+      // Convert Sets to arrays
+      const categoriesArray = Array.from(uniqueCategories);
+      const subcategoriesRecord: Record<string, string[]> = {};
+      
+      Object.entries(subcategoriesByCategory).forEach(([category, subcategorySet]) => {
+        subcategoriesRecord[category] = Array.from(subcategorySet);
+      });
+      
+      return {
+        images: galleryImages,
+        categories: categoriesArray,
+        subcategories: subcategoriesRecord
+      };
+    } catch (fallbackErr) {
+      console.error('Error with fallback method:', fallbackErr);
+      return {
+        images: [],
+        categories: [],
+        subcategories: {},
+        error: err instanceof Error ? err.message : 'Failed to fetch gallery images'
+      };
     }
-  });
-}
-
-/**
- * Process a direct image in a category folder
- */
-function processDirectCategoryImage(
-  item: any,
-  categoryId: string,
-  galleryImages: GalleryItem[]
-): void {
-  const imageUrl = supabase.storage
-    .from('gallery')
-    .getPublicUrl(`${categoryId}/${item.name}`).data.publicUrl;
-  
-  const galleryItem = createGalleryItemFromMetadata({
-    image: item,
-    index: galleryImages.length,
-    categoryId,
-    imageUrl,
-    categoryDescriptions,
-    subcategoryDescriptions
-  });
-  
-  galleryImages.push(galleryItem);
+  }
 }
