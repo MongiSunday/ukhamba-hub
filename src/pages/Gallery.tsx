@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -10,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { GalleryItem } from '@/data/gallery/images';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
+import { Button } from '@/components/ui/button';
+import { RefreshCcw } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 const ITEMS_PER_PAGE = 12;
@@ -30,7 +31,8 @@ const Gallery = () => {
     categories, 
     subcategories, 
     totalPages,
-    totalItems 
+    totalItems,
+    retryLoading
   } = useGalleryImages({
     categoryId: activeCategory,
     subcategoryId: activeSubcategory,
@@ -147,6 +149,14 @@ const Gallery = () => {
     return links;
   };
 
+  const handleRetry = () => {
+    toast({
+      title: "Retrying",
+      description: "Attempting to load images again...",
+    });
+    retryLoading();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -174,6 +184,26 @@ const Gallery = () => {
           </div>
         ) : (
           <>
+            {error && (
+              <div className="container-custom py-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-800">
+                      {error}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRetry}
+                    className="gap-2"
+                  >
+                    <RefreshCcw size={16} />
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             <GalleryGrid 
               items={filteredItems} 
               onItemClick={handleItemClick}

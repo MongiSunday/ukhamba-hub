@@ -26,9 +26,15 @@ export async function fetchGalleryImages(): Promise<{
       throw new Error(`Failed to fetch gallery images: ${error.message}`);
     }
 
-    if (!data || data.length === 0) {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
       console.warn('No images returned from the gallery function');
       throw new Error('No images found in the gallery');
+    }
+
+    // Check if we received an error object instead of image data
+    if (!Array.isArray(data) && data.error) {
+      console.error('Error from Bunny.net function:', data);
+      throw new Error(`Error from Bunny.net: ${data.error}`);
     }
 
     console.log(`Received ${data.length} gallery items from Bunny.net`);

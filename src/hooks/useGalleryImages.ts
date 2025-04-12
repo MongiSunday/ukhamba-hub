@@ -26,6 +26,7 @@ export const useGalleryImages = ({
   const [categories, setCategories] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<Record<string, string[]>>({});
   const [totalPages, setTotalPages] = useState(1);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const loadGalleryData = async () => {
@@ -95,14 +96,22 @@ export const useGalleryImages = ({
         const paginatedItems = filtered.slice(startIndex, startIndex + itemsPerPage);
         
         setItems(paginatedItems);
-        setError('Could not fetch images from Supabase storage. Using fallback data.');
+        
+        // Set a descriptive error message
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load images';
+        setError(`Using fallback gallery images. ${errorMessage}`);
       } finally {
         setLoading(false);
       }
     };
 
     loadGalleryData();
-  }, [categoryId, subcategoryId, page, itemsPerPage]);
+  }, [categoryId, subcategoryId, page, itemsPerPage, retryCount]);
+
+  // Function to allow manual retry from UI
+  const retryLoading = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   return { 
     items, 
@@ -111,6 +120,7 @@ export const useGalleryImages = ({
     categories, 
     subcategories, 
     totalPages, 
-    totalItems: allItems.length 
+    totalItems: allItems.length,
+    retryLoading
   };
 };

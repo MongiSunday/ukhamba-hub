@@ -40,29 +40,59 @@ serve(async (req) => {
     const region = Deno.env.get("BUNNY_REGION") || "de";
     
     if (!bunnyAccessKey || !bunnyStorageZone || !bunnyPullZone) {
+      console.error("Missing Bunny.net credentials:", {
+        hasAccessKey: !!bunnyAccessKey,
+        hasStorageZone: !!bunnyStorageZone,
+        hasPullZone: !!bunnyPullZone
+      });
       throw new Error("Missing Bunny.net credentials");
     }
 
-    console.log(`Connecting to Bunny.net storage zone: ${bunnyStorageZone}, pull zone: ${bunnyPullZone}`);
+    console.log(`Connecting to Bunny.net storage zone: ${bunnyStorageZone}, pull zone: ${bunnyPullZone}, region: ${region}`);
 
-    // Fetch image list from Bunny.net storage
+    // Fetch image list from Bunny.net storage with improved error handling
     const bunnyApiUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/gallery/`;
+    console.log(`Fetching from Bunny.net API: ${bunnyApiUrl}`);
+    
     const response = await fetch(bunnyApiUrl, {
       headers: {
         "AccessKey": bunnyAccessKey,
       },
     });
 
+    console.log(`Bunny.net response status: ${response.status}`);
+    
     if (!response.ok) {
-      console.error("Failed to fetch from Bunny.net storage:", response.status, await response.text());
-      throw new Error(`Failed to fetch from Bunny.net storage: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Failed to fetch from Bunny.net storage:", response.status, errorText);
+      throw new Error(`Failed to fetch from Bunny.net storage: ${response.status} - ${errorText}`);
     }
 
-    const bunnyFiles: BunnyImageMetadata[] = await response.json();
+    let bunnyFiles: BunnyImageMetadata[];
+    try {
+      bunnyFiles = await response.json();
+      console.log(`Successfully parsed response. Found ${bunnyFiles?.length || 0} objects.`);
+    } catch (parseError) {
+      const responseText = await response.text();
+      console.error("Failed to parse Bunny.net response:", parseError, "Response text:", responseText);
+      throw new Error(`Failed to parse Bunny.net response: ${parseError.message}`);
+    }
     
+    // Check if we actually have files
     if (!bunnyFiles || bunnyFiles.length === 0) {
-      console.error("No objects found in Bunny.net storage");
-      throw new Error("No images found in the Bunny.net storage");
+      console.error("No objects found in Bunny.net storage. Please check your storage zone configuration.");
+      
+      // Return a more helpful error response
+      return new Response(JSON.stringify({ 
+        error: "No images found in the Bunny.net storage",
+        message: "Please check your storage zone configuration and ensure images are uploaded to the /gallery/ directory."
+      }), {
+        status: 404,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      });
     }
     
     console.log(`Found ${bunnyFiles.length} objects in Bunny.net storage`);
@@ -162,7 +192,11 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error fetching gallery images:", error);
     
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      note: "Please check that your Bunny.net credentials are correct and that the gallery folder exists in your storage zone."
+    }), {
       status: 500,
       headers: {
         ...corsHeaders,
