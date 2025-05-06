@@ -27,134 +27,108 @@ serve(async (req) => {
   }
 
   try {
-    // Get Cloudflare R2 credentials from environment variables
-    const cfAccountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
-    const cfAccessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID");
-    const cfSecretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
-    const cfBucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME") || "ukhamba-gallery";
+    const accessKey = Deno.env.get("BUNNY_STORAGE_ACCESS_KEY");
+    const storageZone = Deno.env.get("BUNNY_STORAGE_ZONE") || "ukhamba-storage";
+    const pullZone = Deno.env.get("BUNNY_PULL_ZONE");
     
-    if (!cfAccountId || !cfAccessKeyId || !cfSecretAccessKey) {
-      throw new Error("Missing Cloudflare R2 credentials");
+    if (!accessKey || !storageZone) {
+      console.error("Missing Bunny.net credentials");
+      throw new Error("Missing Bunny.net credentials");
     }
 
-    console.log(`Connecting to Cloudflare R2 bucket: ${cfBucketName}`);
-
-    // Construct the base URL for Cloudflare R2 public access
-    const publicUrlBase = `https://${cfBucketName}.${cfAccountId}.r2.cloudflarestorage.com`;
+    console.log(`Connecting to Bunny.net storage zone: ${storageZone}`);
     
-    // Fetch the list of objects using Cloudflare's R2 API
-    const listObjectsUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/r2/buckets/${cfBucketName}/objects`;
-    
-    const response = await fetch(listObjectsUrl, {
+    // Fetch the list of files from Bunny.net storage API
+    const apiUrl = `https://storage.bunnycdn.com/${storageZone}/`;
+    const response = await fetch(apiUrl, {
+      method: "GET",
       headers: {
-        "Authorization": `Bearer ${Deno.env.get("CLOUDFLARE_API_TOKEN")}`,
+        "AccessKey": accessKey,
         "Content-Type": "application/json",
       },
     });
-
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Cloudflare API response status: ${response.status}`);
-      console.error(`Failed to fetch from Cloudflare R2: ${response.status} ${errorText}`);
-      throw new Error(`Failed to fetch from Cloudflare R2: ${response.status} - ${errorText}`);
-    }
-
-    const objects = await response.json();
-    
-    if (!objects.result || objects.result.length === 0) {
-      console.error("No objects found in Cloudflare R2 bucket");
-      throw new Error("No images found in the Cloudflare R2 bucket");
+      console.error(`Bunny.net API response status: ${response.status}`);
+      throw new Error(`Failed to fetch from Bunny.net: ${response.status} ${errorText}`);
     }
     
-    console.log(`Found ${objects.result.length} objects in Cloudflare R2 bucket`);
-
-    // Process the file structure to extract gallery items
-    const galleryItems: GalleryItem[] = objects.result
-      .filter((object: any) => {
+    const data = await response.json();
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      console.error("No objects found in Bunny.net storage");
+      throw new Error("No images found in the Bunny.net storage");
+    }
+    
+    console.log(`Found ${data.length} objects in Bunny.net storage`);
+    
+    // Process the file structure
+    const galleryItems: GalleryItem[] = data
+      .filter(file => {
         // Filter out non-image/video files and directories
-        const key = object.key || "";
-        return (
-          (key.endsWith('.jpg') || 
-          key.endsWith('.jpeg') || 
-          key.endsWith('.png') || 
-          key.endsWith('.gif') || 
-          key.endsWith('.webp') ||
-          key.endsWith('.mp4') || 
-          key.endsWith('.mov')) &&
-          !key.endsWith('/')  // Exclude directory markers
+        const isFile = file.IsDirectory === false;
+        const filename = file.ObjectName || "";
+        return isFile && (
+          filename.toLowerCase().endsWith('.jpg') || 
+          filename.toLowerCase().endsWith('.jpeg') || 
+          filename.toLowerCase().endsWith('.png') || 
+          filename.toLowerCase().endsWith('.gif') || 
+          filename.toLowerCase().endsWith('.webp') ||
+          filename.toLowerCase().endsWith('.mp4') || 
+          filename.toLowerCase().endsWith('.mov')
         );
       })
-      .map((object: any) => {
-        const key = object.key || "";
+      .map(file => {
+        const key = file.ObjectName || "";
         const pathParts = key.split('/');
         const filename = pathParts.pop() || "";
         
-        // Get category and subcategory from path
-        let categoryId = '';
-        let subcategoryId = '';
+        // Get category from path or file structure
+        const categoryId = pathParts[0] || 'uncategorized';
+        const subcategoryId = pathParts.length > 1 ? pathParts.slice(1).join('/') : undefined;
         
-        if (pathParts.length > 0) {
-          categoryId = pathParts[0];
-          
-          if (pathParts.length > 1) {
-            // Join all middle path parts as the subcategory (in case subcategory names contain slashes)
-            subcategoryId = pathParts.slice(1).join('/');
-          }
-        }
-
-        // Format title from filename by removing file extension and replacing underscores
+        // Format title from filename
         const extension = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
         const filenameWithoutExtension = filename.replace(extension, '').replace(/_/g, ' ');
-        let title = filenameWithoutExtension;
-        
-        // If the filename starts with the subcategory name, remove that part to avoid duplication
-        if (subcategoryId && title.startsWith(subcategoryId)) {
-          title = title.substring(subcategoryId.length).trim();
-        }
-        
-        // Remove any leading numbers and spaces (like "1. ", "2 - ", etc.)
-        title = title.replace(/^\d+[\s.-]*/, '').trim();
-        
-        // If title is empty or just a number, use the full filename
-        if (!title || /^\d+$/.test(title)) {
-          title = filenameWithoutExtension;
-        }
+        const title = filenameWithoutExtension;
         
         // Generate public URL
-        const imageUrl = `${publicUrlBase}/${key}`;
+        let imageUrl = "";
+        if (pullZone) {
+          // If pull zone is configured, use it
+          imageUrl = `https://${pullZone}.b-cdn.net/${key}`;
+        } else {
+          // Direct storage URL (not recommended for production)
+          imageUrl = `https://storage.bunnycdn.com/${storageZone}/${key}`;
+        }
         
         return {
           id: key,
-          title: title.charAt(0).toUpperCase() + title.slice(1), // Capitalize first letter
-          description: '', // No description available from folder structure
+          title,
+          description: '',
           imageUrl,
           categoryId,
-          subcategoryId: subcategoryId || undefined,
-          type: (key.endsWith('.mp4') || key.endsWith('.mov')) ? 'video' : 'image',
-          featured: false, // Default to false as we don't have this metadata
-          date: object.uploaded || new Date().toISOString()
+          subcategoryId,
+          type: (key.toLowerCase().endsWith('.mp4') || key.toLowerCase().endsWith('.mov')) ? 'video' : 'image',
+          featured: false,
+          date: file.DateCreated || new Date().toISOString()
         };
       });
     
     // Sort by category, subcategory, and then by filename
     galleryItems.sort((a, b) => {
-      // First sort by category
       if (a.categoryId !== b.categoryId) {
         return a.categoryId.localeCompare(b.categoryId);
       }
       
-      // Then sort by subcategory
       if (a.subcategoryId !== b.subcategoryId) {
         return (a.subcategoryId || '').localeCompare(b.subcategoryId || '');
       }
       
-      // Finally sort by the original filename which should maintain numeric ordering
       return a.id.localeCompare(b.id);
     });
-
-    console.log(`Successfully processed ${galleryItems.length} gallery items`);
-
-    // Return gallery items as JSON response
+    
     return new Response(JSON.stringify(galleryItems), {
       headers: {
         ...corsHeaders,

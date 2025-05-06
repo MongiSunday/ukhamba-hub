@@ -14,15 +14,15 @@ export async function fetchGalleryImages(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('Fetching gallery images from Cloudflare R2 via Edge Function');
+    console.log('Fetching gallery images from Cloudflare R2');
     
     // Use the edge function that connects to Cloudflare R2
-    const { data, error } = await supabase.functions.invoke("fetch-gallery-images-bunny", {
+    const { data, error } = await supabase.functions.invoke("fetch-gallery-images", {
       method: "GET",
     });
 
     if (error) {
-      console.error('Error calling fetch-gallery-images-bunny function:', error);
+      console.error('Error calling fetch-gallery-images function:', error);
       throw new Error(`Failed to fetch gallery images: ${error.message}`);
     }
 
@@ -90,10 +90,10 @@ export async function fetchGalleryImages(): Promise<{
   } catch (err) {
     console.error('Error fetching gallery images from Cloudflare R2:', err);
     
-    // Fall back to the original Supabase implementation
+    // Fall back to Bunny.net implementation
     try {
-      console.log('Falling back to Supabase R2 edge function');
-      const { data, error } = await supabase.functions.invoke("fetch-gallery-images", {
+      console.log('Falling back to Bunny.net storage');
+      const { data, error } = await supabase.functions.invoke("fetch-gallery-images-bunny", {
         method: "GET",
       });
       

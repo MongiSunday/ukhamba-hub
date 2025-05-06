@@ -36,21 +36,22 @@ serve(async (req) => {
   }
 
   try {
-    // Get R2 credentials from environment variables
     const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
     const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID");
     const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
     const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME") || "ukhamba-gallery";
     
+    // Validate necessary environment variables
     if (!accountId || !accessKeyId || !secretAccessKey) {
+      console.error("Missing R2 credentials");
       throw new Error("Missing Cloudflare R2 credentials");
     }
 
     console.log(`Connecting to R2 bucket: ${bucketName}`);
 
-    // Create S3 client for R2
+    // Create S3 client for R2 with explicit configuration
     const s3Client = new S3Client({
-      region: "auto",
+      region: "auto", // R2 uses 'auto'
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId,
@@ -61,8 +62,11 @@ serve(async (req) => {
     // List objects in the bucket
     const command = new ListObjectsV2Command({
       Bucket: bucketName,
+      // Optional: add a prefix if you want to list objects in a specific "folder"
+      // Prefix: "folder-name/",
     });
 
+    console.log("Sending ListObjectsV2Command to R2");
     const r2Response = await s3Client.send(command);
     
     if (!r2Response.Contents || r2Response.Contents.length === 0) {
@@ -78,13 +82,13 @@ serve(async (req) => {
         // Filter out non-image/video files and directories
         const key = object.Key || "";
         return (
-          (key.endsWith('.jpg') || 
-          key.endsWith('.jpeg') || 
-          key.endsWith('.png') || 
-          key.endsWith('.gif') || 
-          key.endsWith('.webp') ||
-          key.endsWith('.mp4') || 
-          key.endsWith('.mov')) &&
+          (key.toLowerCase().endsWith('.jpg') || 
+          key.toLowerCase().endsWith('.jpeg') || 
+          key.toLowerCase().endsWith('.png') || 
+          key.toLowerCase().endsWith('.gif') || 
+          key.toLowerCase().endsWith('.webp') ||
+          key.toLowerCase().endsWith('.mp4') || 
+          key.toLowerCase().endsWith('.mov')) &&
           !key.endsWith('/')  // Exclude directory markers
         );
       })
@@ -124,17 +128,17 @@ serve(async (req) => {
           title = filenameWithoutExtension;
         }
         
-        // Generate public URL
-        const imageUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${key}`;
+        // Generate public URL - use R2 public URL format
+        const imageUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${encodeURIComponent(key)}`;
         
         return {
           id: key,
           title,
           description: '', // No description available from folder structure
           imageUrl,
-          categoryId,
+          categoryId: categoryId || 'uncategorized',
           subcategoryId: subcategoryId || undefined,
-          type: (key.endsWith('.mp4') || key.endsWith('.mov')) ? 'video' : 'image',
+          type: (key.toLowerCase().endsWith('.mp4') || key.toLowerCase().endsWith('.mov')) ? 'video' : 'image',
           featured: false, // Default to false as we don't have this metadata
           date: object.LastModified ? object.LastModified.toISOString() : new Date().toISOString()
         };

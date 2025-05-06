@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -33,7 +34,7 @@ export function getOptimizedImageUrl(url: string, width?: number, height?: numbe
     return url;
   }
   
-  // Check if this is a Bunny.net URL (keep as fallback)
+  // Check if this is a Bunny.net URL
   if (url.includes('b-cdn.net')) {
     const params = [];
     
@@ -54,6 +55,6 @@ export function getOptimizedImageUrl(url: string, width?: number, height?: numbe
     }
   }
   
-  // Return the original URL for other providers
+  // Return the original URL for other providers or static images
   return url;
 }
