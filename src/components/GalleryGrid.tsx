@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Image } from 'lucide-react';
+import { Image, PlayCircle } from 'lucide-react';
 import { GalleryItem } from '@/data/gallery/images';
-import { getOptimizedImageUrl } from '@/lib/utils';
+import { getOptimizedImageUrl, isVideoSource, generateSrcSet } from '@/lib/utils';
 
 interface GalleryGridProps {
   items: GalleryItem[];
@@ -26,13 +26,22 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
             >
               <div className="aspect-square bg-gray-200 relative overflow-hidden">
                 {item.imageUrl ? (
-                  <img
-                    src={getOptimizedImageUrl(item.imageUrl, 400, 400)}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <>
+                    <img
+                      src={getOptimizedImageUrl(item.imageUrl, 400, 400)}
+                      srcSet={generateSrcSet(item.imageUrl)}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {item.type === 'video' && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <PlayCircle size={48} className="text-white opacity-80" />
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <Image size={48} />

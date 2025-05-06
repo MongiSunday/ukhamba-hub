@@ -41,17 +41,27 @@ serve(async (req) => {
     const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
     const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME") || "ukhamba-gallery";
     
-    // Validate necessary environment variables
-    if (!accountId || !accessKeyId || !secretAccessKey) {
-      console.error("Missing R2 credentials");
-      throw new Error("Missing Cloudflare R2 credentials");
+    // Validate necessary environment variables with detailed logging
+    if (!accountId) {
+      console.error("Missing CLOUDFLARE_R2_ACCOUNT_ID environment variable");
+      throw new Error("Missing Cloudflare R2 account ID");
+    }
+    
+    if (!accessKeyId) {
+      console.error("Missing CLOUDFLARE_R2_ACCESS_KEY_ID environment variable");
+      throw new Error("Missing Cloudflare R2 access key ID");
+    }
+    
+    if (!secretAccessKey) {
+      console.error("Missing CLOUDFLARE_R2_SECRET_ACCESS_KEY environment variable");
+      throw new Error("Missing Cloudflare R2 secret access key");
     }
 
-    console.log(`Connecting to R2 bucket: ${bucketName}`);
+    console.log(`Connecting to R2 bucket: ${bucketName} in account ${accountId}`);
 
-    // Create S3 client for R2 with explicit configuration
+    // Create S3 client for R2
     const s3Client = new S3Client({
-      region: "auto", // R2 uses 'auto'
+      region: "auto",
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId,
@@ -59,11 +69,10 @@ serve(async (req) => {
       },
     });
 
-    // List objects in the bucket
+    // List objects in the bucket with pagination support
     const command = new ListObjectsV2Command({
       Bucket: bucketName,
-      // Optional: add a prefix if you want to list objects in a specific "folder"
-      // Prefix: "folder-name/",
+      MaxKeys: 1000, // Adjust as needed for larger galleries
     });
 
     console.log("Sending ListObjectsV2Command to R2");
@@ -76,21 +85,23 @@ serve(async (req) => {
     
     console.log(`Found ${r2Response.Contents.length} objects in R2 bucket`);
 
-    // Process the file structure to reflect the directory hierarchy
+    // Process the file structure to create gallery items
     const galleryItems: GalleryItem[] = r2Response.Contents
       .filter(object => {
         // Filter out non-image/video files and directories
         const key = object.Key || "";
-        return (
-          (key.toLowerCase().endsWith('.jpg') || 
+        const isValidMedia = (
+          key.toLowerCase().endsWith('.jpg') || 
           key.toLowerCase().endsWith('.jpeg') || 
           key.toLowerCase().endsWith('.png') || 
           key.toLowerCase().endsWith('.gif') || 
           key.toLowerCase().endsWith('.webp') ||
           key.toLowerCase().endsWith('.mp4') || 
-          key.toLowerCase().endsWith('.mov')) &&
-          !key.endsWith('/')  // Exclude directory markers
+          key.toLowerCase().endsWith('.mov')
         );
+        
+        const isNotDirectory = !key.endsWith('/');
+        return isValidMedia && isNotDirectory;
       })
       .map((object: R2ObjectMetadata) => {
         const key = object.Key || "";
@@ -105,62 +116,69 @@ serve(async (req) => {
           categoryId = pathParts[0];
           
           if (pathParts.length > 1) {
-            // Join all middle path parts as the subcategory (in case subcategory names contain slashes)
+            // Join all middle path parts as the subcategory
             subcategoryId = pathParts.slice(1).join('/');
           }
         }
 
-        // Format title from filename by removing file extension and replacing underscores
+        // Format title from filename
         const extension = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
         const filenameWithoutExtension = filename.replace(extension, '').replace(/_/g, ' ');
         let title = filenameWithoutExtension;
         
-        // If the filename starts with the subcategory name, remove that part to avoid duplication
+        // Clean up title - remove numbers and prefix
         if (subcategoryId && title.startsWith(subcategoryId)) {
           title = title.substring(subcategoryId.length).trim();
         }
         
-        // Remove any leading numbers and spaces (like "1. ", "2 - ", etc.)
+        // Remove leading numbers, dots, dashes
         title = title.replace(/^\d+[\s.-]*/, '').trim();
+        title = title.charAt(0).toUpperCase() + title.slice(1);
         
         // If title is empty or just a number, use the full filename
         if (!title || /^\d+$/.test(title)) {
           title = filenameWithoutExtension;
         }
         
-        // Generate public URL - use R2 public URL format
-        const imageUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${encodeURIComponent(key)}`;
+        // Generate public URL with properly encoded path
+        const encodedKey = key.split('/').map(part => encodeURIComponent(part)).join('/');
+        const imageUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${encodedKey}`;
+        
+        // Determine content type
+        const isVideo = key.toLowerCase().endsWith('.mp4') || key.toLowerCase().endsWith('.mov');
         
         return {
           id: key,
           title,
-          description: '', // No description available from folder structure
+          description: '', // Will be enhanced by gallery service
           imageUrl,
           categoryId: categoryId || 'uncategorized',
           subcategoryId: subcategoryId || undefined,
-          type: (key.toLowerCase().endsWith('.mp4') || key.toLowerCase().endsWith('.mov')) ? 'video' : 'image',
-          featured: false, // Default to false as we don't have this metadata
+          type: isVideo ? 'video' : 'image',
+          featured: false, // Default value
           date: object.LastModified ? object.LastModified.toISOString() : new Date().toISOString()
         };
       });
     
-    // Sort by category, subcategory, and then by filename
+    // Sort the items
     galleryItems.sort((a, b) => {
       // First sort by category
       if (a.categoryId !== b.categoryId) {
         return a.categoryId.localeCompare(b.categoryId);
       }
       
-      // Then sort by subcategory
+      // Then by subcategory
       if (a.subcategoryId !== b.subcategoryId) {
         return (a.subcategoryId || '').localeCompare(b.subcategoryId || '');
       }
       
-      // Finally sort by the original filename which should maintain numeric ordering
+      // Finally by filename (preserves numeric ordering)
       return a.id.localeCompare(b.id);
     });
 
-    // Return gallery items as JSON response
+    console.log(`Processed ${galleryItems.length} gallery items successfully`);
+    
+    // Return gallery items as JSON response with CORS headers
     return new Response(JSON.stringify(galleryItems), {
       headers: {
         ...corsHeaders,
@@ -171,7 +189,12 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error fetching gallery images:", error);
     
-    return new Response(JSON.stringify({ error: error.message }), {
+    // Return a detailed error response
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      provider: "cloudflare",
+      timestamp: new Date().toISOString(),
+    }), {
       status: 500,
       headers: {
         ...corsHeaders,

@@ -2,9 +2,9 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { GalleryItem } from '@/data/gallery/images';
-import { getOptimizedImageUrl } from '@/lib/utils';
+import { getOptimizedImageUrl, isVideoSource } from '@/lib/utils';
 
 interface GalleryLightboxProps {
   isOpen: boolean;
@@ -40,17 +40,38 @@ const GalleryLightbox = ({
           <DialogHeader className="p-4">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-white">{item.title}</DialogTitle>
+              <a 
+                href={item.imageUrl} 
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-white/70 hover:text-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download size={16} />
+                <span>Download Original</span>
+              </a>
             </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden relative">
             <div className="flex items-center justify-center h-full p-2">
-              <img 
-                src={getOptimizedImageUrl(item.imageUrl, 1200)} 
-                alt={item.title} 
-                className="max-h-[60vh] max-w-full object-contain"
-                loading="eager"
-              />
+              {isVideoSource(item.imageUrl) ? (
+                <video 
+                  src={item.imageUrl} 
+                  controls 
+                  className="max-h-[60vh] max-w-full"
+                  autoPlay
+                  playsInline
+                />
+              ) : (
+                <img 
+                  src={getOptimizedImageUrl(item.imageUrl, 1200, undefined, { quality: 90 })} 
+                  alt={item.title} 
+                  className="max-h-[60vh] max-w-full object-contain"
+                  loading="eager"
+                />
+              )}
             </div>
 
             <div className="absolute top-1/2 left-4 -translate-y-1/2">
