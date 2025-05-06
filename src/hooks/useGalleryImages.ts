@@ -27,6 +27,7 @@ export const useGalleryImages = ({
   const [subcategories, setSubcategories] = useState<Record<string, string[]>>({});
   const [totalPages, setTotalPages] = useState(1);
   const [retryCount, setRetryCount] = useState(0);
+  const [provider, setProvider] = useState<'cloudflare' | 'supabase' | 'fallback' | 'unknown'>('unknown');
 
   useEffect(() => {
     const loadGalleryData = async () => {
@@ -39,6 +40,16 @@ export const useGalleryImages = ({
           
         if (fetchError) {
           throw new Error(fetchError);
+        }
+        
+        // Determine the provider based on image URLs
+        const sampleUrl = galleryImages[0]?.imageUrl || '';
+        if (sampleUrl.includes('r2.cloudflarestorage.com')) {
+          setProvider('cloudflare');
+        } else if (sampleUrl.includes('b-cdn.net')) {
+          setProvider('supabase');
+        } else {
+          setProvider('unknown');
         }
         
         setCategories(categoryList);
@@ -71,6 +82,7 @@ export const useGalleryImages = ({
         setError(null);
       } catch (err) {
         console.warn('Falling back to static gallery data:', err);
+        setProvider('fallback');
         
         // Filter the fallback data using the same logic
         let filtered = [...fallbackGalleryItems];
@@ -121,6 +133,7 @@ export const useGalleryImages = ({
     subcategories, 
     totalPages, 
     totalItems: allItems.length,
+    provider,
     retryLoading
   };
 };

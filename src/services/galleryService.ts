@@ -14,9 +14,9 @@ export async function fetchGalleryImages(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('Fetching gallery images from Bunny.net via Edge Function');
+    console.log('Fetching gallery images from Cloudflare R2 via Edge Function');
     
-    // Use the new Supabase Edge Function that connects to Bunny.net
+    // Use the edge function that connects to Cloudflare R2
     const { data, error } = await supabase.functions.invoke("fetch-gallery-images-bunny", {
       method: "GET",
     });
@@ -33,11 +33,11 @@ export async function fetchGalleryImages(): Promise<{
 
     // Check if we received an error object instead of image data
     if (!Array.isArray(data) && data.error) {
-      console.error('Error from Bunny.net function:', data);
-      throw new Error(`Error from Bunny.net: ${data.error}`);
+      console.error('Error from Edge function:', data);
+      throw new Error(`Error from Cloudflare R2: ${data.error}`);
     }
 
-    console.log(`Received ${data.length} gallery items from Bunny.net`);
+    console.log(`Received ${data.length} gallery items from Cloudflare R2`);
 
     // Process the returned data to extract categories and subcategories
     const uniqueCategories = new Set<string>();
@@ -88,7 +88,7 @@ export async function fetchGalleryImages(): Promise<{
       subcategories: subcategoriesRecord
     };
   } catch (err) {
-    console.error('Error fetching gallery images from Bunny.net:', err);
+    console.error('Error fetching gallery images from Cloudflare R2:', err);
     
     // Fall back to the original Supabase implementation
     try {

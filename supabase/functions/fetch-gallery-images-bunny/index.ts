@@ -20,12 +20,6 @@ interface GalleryItem {
   date: string;
 }
 
-interface BunnyImageMetadata {
-  Key: string;
-  LastModified?: string;
-  Size?: number;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -33,75 +27,52 @@ serve(async (req) => {
   }
 
   try {
-    // Get Bunny.net credentials from environment variables
-    const bunnyAccessKey = Deno.env.get("BUNNY_STORAGE_ACCESS_KEY");
-    const bunnyStorageZone = Deno.env.get("BUNNY_STORAGE_ZONE");
-    const bunnyPullZone = Deno.env.get("BUNNY_PULL_ZONE");
-    const region = Deno.env.get("BUNNY_REGION") || "de";
+    // Get Cloudflare R2 credentials from environment variables
+    const cfAccountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
+    const cfAccessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID");
+    const cfSecretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
+    const cfBucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME") || "ukhamba-gallery";
     
-    if (!bunnyAccessKey || !bunnyStorageZone || !bunnyPullZone) {
-      console.error("Missing Bunny.net credentials:", {
-        hasAccessKey: !!bunnyAccessKey,
-        hasStorageZone: !!bunnyStorageZone,
-        hasPullZone: !!bunnyPullZone
-      });
-      throw new Error("Missing Bunny.net credentials");
+    if (!cfAccountId || !cfAccessKeyId || !cfSecretAccessKey) {
+      throw new Error("Missing Cloudflare R2 credentials");
     }
 
-    console.log(`Connecting to Bunny.net storage zone: ${bunnyStorageZone}, pull zone: ${bunnyPullZone}, region: ${region}`);
+    console.log(`Connecting to Cloudflare R2 bucket: ${cfBucketName}`);
 
-    // Fetch image list from Bunny.net storage with improved error handling
-    const bunnyApiUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/gallery/`;
-    console.log(`Fetching from Bunny.net API: ${bunnyApiUrl}`);
+    // Construct the base URL for Cloudflare R2 public access
+    const publicUrlBase = `https://${cfBucketName}.${cfAccountId}.r2.cloudflarestorage.com`;
     
-    const response = await fetch(bunnyApiUrl, {
+    // Fetch the list of objects using Cloudflare's R2 API
+    const listObjectsUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/r2/buckets/${cfBucketName}/objects`;
+    
+    const response = await fetch(listObjectsUrl, {
       headers: {
-        "AccessKey": bunnyAccessKey,
+        "Authorization": `Bearer ${Deno.env.get("CLOUDFLARE_API_TOKEN")}`,
+        "Content-Type": "application/json",
       },
     });
 
-    console.log(`Bunny.net response status: ${response.status}`);
-    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Failed to fetch from Bunny.net storage:", response.status, errorText);
-      throw new Error(`Failed to fetch from Bunny.net storage: ${response.status} - ${errorText}`);
+      console.error(`Cloudflare API response status: ${response.status}`);
+      console.error(`Failed to fetch from Cloudflare R2: ${response.status} ${errorText}`);
+      throw new Error(`Failed to fetch from Cloudflare R2: ${response.status} - ${errorText}`);
     }
 
-    let bunnyFiles: BunnyImageMetadata[];
-    try {
-      bunnyFiles = await response.json();
-      console.log(`Successfully parsed response. Found ${bunnyFiles?.length || 0} objects.`);
-    } catch (parseError) {
-      const responseText = await response.text();
-      console.error("Failed to parse Bunny.net response:", parseError, "Response text:", responseText);
-      throw new Error(`Failed to parse Bunny.net response: ${parseError.message}`);
+    const objects = await response.json();
+    
+    if (!objects.result || objects.result.length === 0) {
+      console.error("No objects found in Cloudflare R2 bucket");
+      throw new Error("No images found in the Cloudflare R2 bucket");
     }
     
-    // Check if we actually have files
-    if (!bunnyFiles || bunnyFiles.length === 0) {
-      console.error("No objects found in Bunny.net storage. Please check your storage zone configuration.");
-      
-      // Return a more helpful error response
-      return new Response(JSON.stringify({ 
-        error: "No images found in the Bunny.net storage",
-        message: "Please check your storage zone configuration and ensure images are uploaded to the /gallery/ directory."
-      }), {
-        status: 404,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      });
-    }
-    
-    console.log(`Found ${bunnyFiles.length} objects in Bunny.net storage`);
+    console.log(`Found ${objects.result.length} objects in Cloudflare R2 bucket`);
 
-    // Process the file structure to reflect the directory hierarchy
-    const galleryItems: GalleryItem[] = bunnyFiles
-      .filter(object => {
+    // Process the file structure to extract gallery items
+    const galleryItems: GalleryItem[] = objects.result
+      .filter((object: any) => {
         // Filter out non-image/video files and directories
-        const key = object.Key || "";
+        const key = object.key || "";
         return (
           (key.endsWith('.jpg') || 
           key.endsWith('.jpeg') || 
@@ -113,8 +84,8 @@ serve(async (req) => {
           !key.endsWith('/')  // Exclude directory markers
         );
       })
-      .map((object) => {
-        const key = object.Key || "";
+      .map((object: any) => {
+        const key = object.key || "";
         const pathParts = key.split('/');
         const filename = pathParts.pop() || "";
         
@@ -149,19 +120,19 @@ serve(async (req) => {
           title = filenameWithoutExtension;
         }
         
-        // Generate public URL through the CDN pull zone
-        const imageUrl = `https://${bunnyPullZone}.b-cdn.net/gallery/${key}`;
+        // Generate public URL
+        const imageUrl = `${publicUrlBase}/${key}`;
         
         return {
           id: key,
-          title,
+          title: title.charAt(0).toUpperCase() + title.slice(1), // Capitalize first letter
           description: '', // No description available from folder structure
           imageUrl,
           categoryId,
           subcategoryId: subcategoryId || undefined,
           type: (key.endsWith('.mp4') || key.endsWith('.mov')) ? 'video' : 'image',
           featured: false, // Default to false as we don't have this metadata
-          date: object.LastModified || new Date().toISOString()
+          date: object.uploaded || new Date().toISOString()
         };
       });
     
@@ -181,6 +152,8 @@ serve(async (req) => {
       return a.id.localeCompare(b.id);
     });
 
+    console.log(`Successfully processed ${galleryItems.length} gallery items`);
+
     // Return gallery items as JSON response
     return new Response(JSON.stringify(galleryItems), {
       headers: {
@@ -192,11 +165,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error fetching gallery images:", error);
     
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      note: "Please check that your Bunny.net credentials are correct and that the gallery folder exists in your storage zone."
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
         ...corsHeaders,

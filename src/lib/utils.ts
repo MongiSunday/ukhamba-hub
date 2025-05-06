@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -7,14 +6,34 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Generates an optimized image URL for a Bunny.net CDN image
+ * Generates an optimized image URL based on the source provider
  * @param url Original image URL
  * @param width Desired width
  * @param height Desired height
- * @returns Optimized image URL with width and height parameters
+ * @returns Optimized image URL with appropriate parameters
  */
 export function getOptimizedImageUrl(url: string, width?: number, height?: number): string {
-  // Check if this is a Bunny.net URL
+  // Check if this is a Cloudflare R2 URL
+  if (url.includes('r2.cloudflarestorage.com')) {
+    const params = [];
+    
+    if (width) {
+      params.push(`width=${width}`);
+    }
+    
+    if (height) {
+      params.push(`height=${height}`);
+    }
+    
+    // Add image optimization parameters for Cloudflare R2
+    if (params.length > 0) {
+      return `${url}?${params.join('&')}`;
+    }
+    
+    return url;
+  }
+  
+  // Check if this is a Bunny.net URL (keep as fallback)
   if (url.includes('b-cdn.net')) {
     const params = [];
     
@@ -35,6 +54,6 @@ export function getOptimizedImageUrl(url: string, width?: number, height?: numbe
     }
   }
   
-  // Return the original URL for non-Bunny URLs
+  // Return the original URL for other providers
   return url;
 }

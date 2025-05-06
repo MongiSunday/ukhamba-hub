@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -12,6 +13,7 @@ import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { Button } from '@/components/ui/button';
 import { RefreshCcw } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -32,6 +34,7 @@ const Gallery = () => {
     subcategories, 
     totalPages,
     totalItems,
+    provider,
     retryLoading
   } = useGalleryImages({
     categoryId: activeCategory,
@@ -77,6 +80,20 @@ const Gallery = () => {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [activeCategory, activeSubcategory]);
+
+  // Get badge color based on provider
+  const getProviderBadge = () => {
+    switch (provider) {
+      case 'cloudflare':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Cloudflare R2</Badge>;
+      case 'supabase':
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Supabase</Badge>;
+      case 'fallback':
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Local Fallback</Badge>;
+      default:
+        return null;
+    }
+  };
 
   // Generate pagination links
   const renderPaginationLinks = () => {
@@ -184,22 +201,34 @@ const Gallery = () => {
           </div>
         ) : (
           <>
+            <div className="container-custom py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {provider !== 'unknown' && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-foreground/70">Images from:</span>
+                    {getProviderBadge()}
+                  </div>
+                )}
+              </div>
+              
+              {error && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleRetry}
+                  className="gap-2"
+                >
+                  <RefreshCcw size={16} />
+                  Retry
+                </Button>
+              )}
+            </div>
+            
             {error && (
               <div className="container-custom py-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-md p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-800">
-                      {error}
-                    </p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleRetry}
-                    className="gap-2"
-                  >
-                    <RefreshCcw size={16} />
-                    Retry
-                  </Button>
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                  <p className="text-amber-800">
+                    {error}
+                  </p>
                 </div>
               </div>
             )}
