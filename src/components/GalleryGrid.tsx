@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Image, PlayCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Image, PlayCircle, Loader2 } from 'lucide-react';
 import { GalleryItem } from '@/data/gallery/images';
 import { getOptimizedImageUrl, isVideoSource, generateSrcSet } from '@/lib/utils';
 
@@ -10,6 +10,20 @@ interface GalleryGridProps {
 }
 
 const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  
+  // Reset loaded state when items change
+  useEffect(() => {
+    setLoadedImages({});
+  }, [items]);
+
+  const handleImageLoad = (itemId: string) => {
+    setLoadedImages(prev => ({
+      ...prev,
+      [itemId]: true
+    }));
+  };
+
   return (
     <div className="container-custom py-8">
       {items.length === 0 ? (
@@ -24,7 +38,7 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
               className="group relative rounded-lg overflow-hidden shadow-md hover-scale cursor-pointer"
               onClick={() => onItemClick(item)}
             >
-              <div className="aspect-square bg-gray-200 relative overflow-hidden">
+              <div className="aspect-square bg-gray-100 relative overflow-hidden">
                 {item.imageUrl ? (
                   <>
                     <img
@@ -32,10 +46,21 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
                       srcSet={generateSrcSet(item.imageUrl)}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       alt={item.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                        loadedImages[item.id] ? 'opacity-100' : 'opacity-0'
+                      } transition-opacity duration-300`}
                       loading="lazy"
                       decoding="async"
+                      onLoad={() => handleImageLoad(item.id)}
                     />
+                    
+                    {/* Loading indicator */}
+                    {!loadedImages[item.id] && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                        <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                      </div>
+                    )}
+                    
                     {item.type === 'video' && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <PlayCircle size={48} className="text-white opacity-80" />
@@ -51,6 +76,9 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white transform translate-y-2 opacity-90 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                 <h3 className="text-sm font-medium line-clamp-2">{item.title}</h3>
+                <p className="text-xs text-white/80 line-clamp-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {item.categoryId && formatCategoryName(item.categoryId)}
+                </p>
               </div>
               {item.featured && (
                 <span className="absolute top-2 right-2 bg-ukhamba-gold text-white text-xs px-2 py-1 rounded">Featured</span>
@@ -61,6 +89,15 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
       )}
     </div>
   );
+};
+
+// Helper function to format category names for display
+const formatCategoryName = (categoryId: string): string => {
+  return categoryId
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 export default GalleryGrid;
