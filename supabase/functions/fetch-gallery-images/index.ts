@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, ListObjectsV2Command } from "https://esm.sh/@aws-sdk/client-s3@3.511.0";
 
 // Define CORS headers for browser requests
 const corsHeaders = {
@@ -19,14 +18,6 @@ interface GalleryItem {
   type: 'image' | 'video';
   featured?: boolean;
   date: string;
-}
-
-interface R2ObjectMetadata {
-  Key?: string;
-  LastModified?: Date;
-  ETag?: string;
-  Size?: number;
-  StorageClass?: string;
 }
 
 serve(async (req) => {
@@ -59,24 +50,164 @@ serve(async (req) => {
 
     console.log(`Connecting to R2 bucket: ${bucketName} in account ${accountId}`);
 
-    // Create S3 client for R2
-    const s3Client = new S3Client({
-      region: "auto",
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
+    // Direct fetch to Cloudflare R2 API instead of using the AWS SDK
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    const region = 'auto';
+    const isoDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const date = isoDate.substring(0, 8);
+    
+    // Create AWS Signature Version 4 headers
+    const method = 'GET';
+    const canonicalUri = `/${bucketName}`;
+    const canonicalQueryString = 'list-type=2';
+    const host = `${accountId}.r2.cloudflarestorage.com`;
+    
+    const canonicalHeaders = 
+      `host:${host}\n` + 
+      `x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n` +
+      `x-amz-date:${isoDate}\n`;
+    
+    const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+    
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const credentialScope = `${date}/${region}/s3/aws4_request`;
+    
+    // Create canonical request
+    const canonicalRequest = 
+      `${method}\n` +
+      `${canonicalUri}\n` +
+      `${canonicalQueryString}\n` +
+      `${canonicalHeaders}\n` +
+      `${signedHeaders}\n` +
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    
+    // Function to sign with HMAC-SHA256
+    async function sign(key: ArrayBuffer, msg: string): Promise<ArrayBuffer> {
+      const encoder = new TextEncoder();
+      const keyObj = await crypto.subtle.importKey(
+        'raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+      );
+      return await crypto.subtle.sign('HMAC', keyObj, encoder.encode(msg));
+    }
+    
+    // Generate the signature
+    async function getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): Promise<ArrayBuffer> {
+      const encoder = new TextEncoder();
+      const kDate = await sign(encoder.encode(`AWS4${key}`), dateStamp);
+      const kRegion = await sign(kDate, regionName);
+      const kService = await sign(kRegion, serviceName);
+      const kSigning = await sign(kService, 'aws4_request');
+      return kSigning;
+    }
+    
+    // Hash the canonical request
+    const encoder = new TextEncoder();
+    const hash = await crypto.subtle.digest('SHA-256', encoder.encode(canonicalRequest));
+    const hashHex = Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Create string to sign
+    const stringToSign = 
+      `${algorithm}\n` +
+      `${isoDate}\n` +
+      `${credentialScope}\n` +
+      `${hashHex}`;
+    
+    // Calculate signature
+    const signingKey = await getSignatureKey(secretAccessKey, date, region, 's3');
+    const signature = await crypto.subtle.sign(
+      'HMAC', 
+      await crypto.subtle.importKey('raw', signingKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']),
+      encoder.encode(stringToSign)
+    );
+    const signatureHex = Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Create authorization header
+    const authorizationHeader = 
+      `${algorithm} ` +
+      `Credential=${accessKeyId}/${credentialScope}, ` +
+      `SignedHeaders=${signedHeaders}, ` +
+      `Signature=${signatureHex}`;
+    
+    // Make the request to list objects
+    const url = `${endpoint}/${bucketName}?list-type=2`;
+    console.log("Making direct fetch request to R2");
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Host': host,
+        'X-Amz-Content-SHA256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        'X-Amz-Date': isoDate,
+        'Authorization': authorizationHeader
+      }
     });
 
-    // List objects in the bucket with pagination support
-    const command = new ListObjectsV2Command({
-      Bucket: bucketName,
-      MaxKeys: 1000, // Adjust as needed for larger galleries
-    });
+    if (!response.ok) {
+      console.error(`R2 API responded with status: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`Failed to list objects from R2: ${response.status} ${response.statusText}`);
+    }
 
-    console.log("Sending ListObjectsV2Command to R2");
-    const r2Response = await s3Client.send(command);
+    const xmlData = await response.text();
+    console.log("Received XML response from R2");
+    
+    // Basic XML parsing function for ListObjectsV2 response
+    function parseXml(xml: string) {
+      const contents: any[] = [];
+      
+      // Extract all objects/items
+      const keyRegex = /<Key>(.+?)<\/Key>/g;
+      const lastModifiedRegex = /<LastModified>(.+?)<\/LastModified>/g;
+      const etагRegex = /<ETag>"(.+?)"<\/ETag>/g;
+      const sizeRegex = /<Size>(\d+)<\/Size>/g;
+      
+      const keys: string[] = [];
+      const lastModified: string[] = [];
+      const etags: string[] = [];
+      const sizes: string[] = [];
+      
+      let match;
+      
+      // Extract all keys
+      while ((match = keyRegex.exec(xml)) !== null) {
+        keys.push(match[1]);
+      }
+      
+      // Extract last modified dates
+      while ((match = lastModifiedRegex.exec(xml)) !== null) {
+        lastModified.push(match[1]);
+      }
+      
+      // Extract ETags
+      while ((match = etагRegex.exec(xml)) !== null) {
+        etags.push(match[1]);
+      }
+      
+      // Extract sizes
+      while ((match = sizeRegex.exec(xml)) !== null) {
+        sizes.push(match[1]);
+      }
+      
+      // Combine all data into objects
+      for (let i = 0; i < keys.length; i++) {
+        contents.push({
+          Key: keys[i],
+          LastModified: new Date(lastModified[i] || ''),
+          ETag: etags[i] || '',
+          Size: parseInt(sizes[i] || '0'),
+          StorageClass: 'STANDARD'
+        });
+      }
+      
+      return { Contents: contents };
+    }
+    
+    const r2Response = parseXml(xmlData);
     
     if (!r2Response.Contents || r2Response.Contents.length === 0) {
       console.error("No objects found in R2 bucket");
@@ -103,7 +234,7 @@ serve(async (req) => {
         const isNotDirectory = !key.endsWith('/');
         return isValidMedia && isNotDirectory;
       })
-      .map((object: R2ObjectMetadata) => {
+      .map((object: any) => {
         const key = object.Key || "";
         const pathParts = key.split('/');
         const filename = pathParts.pop() || "";
