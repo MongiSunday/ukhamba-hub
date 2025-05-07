@@ -81,6 +81,7 @@ const Gallery = () => {
     setCurrentPage(1);
   }, [activeCategory, activeSubcategory]);
 
+  // Handle retry loading of images
   const handleRetry = () => {
     toast({
       title: "Retrying",
@@ -166,14 +167,6 @@ const Gallery = () => {
     }
     
     return links;
-  };
-
-  const handleRetry = () => {
-    toast({
-      title: "Retrying",
-      description: "Attempting to load images again...",
-    });
-    retryLoading();
   };
 
   return (
