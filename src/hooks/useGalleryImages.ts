@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { galleryItems as fallbackGalleryItems, GalleryItem } from '@/data/gallery/images';
 import { fetchGalleryImages } from '@/services/galleryService';
+import { convertToCloudinaryUrl } from '@/lib/utils';
 
 interface UseGalleryImagesOptions {
   categoryId: string | null;
@@ -27,7 +28,7 @@ export const useGalleryImages = ({
   const [subcategories, setSubcategories] = useState<Record<string, string[]>>({});
   const [totalPages, setTotalPages] = useState(1);
   const [retryCount, setRetryCount] = useState(0);
-  const [provider, setProvider] = useState<'cloudflare' | 'supabase' | 'fallback' | 'unknown'>('unknown');
+  const [provider, setProvider] = useState<'cloudflare' | 'cloudinary' | 'bunny' | 'fallback' | 'unknown'>('unknown');
 
   useEffect(() => {
     const loadGalleryData = async () => {
@@ -42,15 +43,8 @@ export const useGalleryImages = ({
           throw new Error(fetchError);
         }
         
-        // Determine the provider based on image URLs
-        const sampleUrl = galleryImages[0]?.imageUrl || '';
-        if (sampleUrl.includes('r2.cloudflarestorage.com')) {
-          setProvider('cloudflare');
-        } else if (sampleUrl.includes('b-cdn.net')) {
-          setProvider('supabase');
-        } else {
-          setProvider('unknown');
-        }
+        // Set provider to Cloudinary as we're now using it
+        setProvider('cloudinary');
         
         setCategories(categoryList);
         setSubcategories(subcategoryMap);
@@ -92,6 +86,12 @@ export const useGalleryImages = ({
             filtered = filtered.filter(item => item.subcategoryId === subcategoryId);
           }
         }
+        
+        // Convert fallback image URLs to Cloudinary
+        filtered = filtered.map(item => ({
+          ...item,
+          imageUrl: convertToCloudinaryUrl(item.imageUrl)
+        }));
         
         // Sort by date
         filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GalleryItem } from '@/data/gallery/images';
 import { categoryDescriptions, subcategoryDescriptions } from '@/data/gallery/descriptions';
 import { formatDisplayName, createGalleryItemFromMetadata } from '@/utils/galleryUtils';
+import { convertToCloudinaryUrl } from '@/lib/utils';
 
 /**
  * Service for fetching and processing gallery images
@@ -43,7 +44,7 @@ export async function fetchGalleryImages(): Promise<{
     const uniqueCategories = new Set<string>();
     const subcategoriesByCategory: Record<string, Set<string>> = {};
     
-    // Add category and subcategory metadata to the items
+    // Add category and subcategory metadata to the items and convert URLs to Cloudinary
     const galleryImages: GalleryItem[] = data.map((item: GalleryItem) => {
       uniqueCategories.add(item.categoryId);
       
@@ -66,9 +67,13 @@ export async function fetchGalleryImages(): Promise<{
         description = `${subcategoryDesc} - ${categoryName}: ${subcategoryName}`;
       }
       
+      // Convert the image URL to a Cloudinary URL for better performance
+      const imageUrl = convertToCloudinaryUrl(item.imageUrl);
+      
       return {
         ...item,
-        description
+        description,
+        imageUrl,
       };
     });
     
@@ -88,7 +93,7 @@ export async function fetchGalleryImages(): Promise<{
       subcategories: subcategoriesRecord
     };
   } catch (err) {
-    console.error('Error fetching gallery images from Cloudflare R2:', err);
+    console.error('Error fetching gallery images:', err);
     
     // Fall back to Bunny.net implementation
     try {
@@ -103,6 +108,7 @@ export async function fetchGalleryImages(): Promise<{
       const uniqueCategories = new Set<string>();
       const subcategoriesByCategory: Record<string, Set<string>> = {};
       
+      // Convert URLs to Cloudinary for better performance
       const galleryImages = data.map((item: GalleryItem) => {
         uniqueCategories.add(item.categoryId);
         
@@ -113,7 +119,13 @@ export async function fetchGalleryImages(): Promise<{
           subcategoriesByCategory[item.categoryId].add(item.subcategoryId);
         }
         
-        return item;
+        // Convert to Cloudinary URL
+        const imageUrl = convertToCloudinaryUrl(item.imageUrl);
+        
+        return {
+          ...item,
+          imageUrl,
+        };
       });
       
       // Convert Sets to arrays

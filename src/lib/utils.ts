@@ -1,9 +1,23 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { buildCloudinaryUrl, buildCloudinarySrcSet } from "@/integrations/cloudinary/client"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Determines the image provider from the URL
+ */
+export function determineImageProvider(url: string): 'cloudflare' | 'bunny' | 'cloudinary' | 'unknown' {
+  if (!url) return 'unknown';
+  
+  if (url.includes('r2.cloudflarestorage.com')) return 'cloudflare';
+  if (url.includes('b-cdn.net')) return 'bunny';
+  if (url.includes('cloudinary.com')) return 'cloudinary';
+  
+  return 'unknown';
 }
 
 /**
@@ -31,46 +45,60 @@ export function getOptimizedImageUrl(
   const format = options?.format || 'webp';
   const fit = options?.fit || 'cover';
   
-  // Check if this is a Cloudflare R2 URL
-  if (url.includes('r2.cloudflarestorage.com')) {
-    const params = [];
+  // Determine provider
+  const provider = determineImageProvider(url);
+
+  // Handle based on provider
+  switch (provider) {
+    case 'cloudinary':
+      // If this is already a Cloudinary URL, optimize it
+      return buildCloudinaryUrl(url, {
+        width,
+        height,
+        quality,
+        format: format === 'auto' ? 'auto' : format,
+        crop: fit === 'cover' ? 'fill' : 'scale'
+      });
+      
+    case 'cloudflare':
+      // Check if this is a Cloudflare R2 URL
+      const params = [];
+      
+      // Add dimensions if specified
+      if (width) params.push(`width=${width}`);
+      if (height) params.push(`height=${height}`);
+      
+      // Add image optimization parameters specific to Cloudflare R2
+      params.push(`format=${format}`);
+      params.push(`quality=${quality}`);
+      params.push(`fit=${fit}`);
+      
+      // For Cloudflare Images API compatibility
+      params.push(`sharpen=1`);
+      
+      // Apply parameters
+      return params.length > 0 ? `${url}?${params.join('&')}` : url;
+      
+    case 'bunny':
+      // Check if this is a Bunny.net URL
+      const bunnyParams = [];
+      
+      // Add dimensions if specified
+      if (width) bunnyParams.push(`width=${width}`);
+      if (height) bunnyParams.push(`height=${height}`);
+      
+      // Add optimization parameters for Bunny.net
+      bunnyParams.push(`format=${format}`);
+      bunnyParams.push(`quality=${quality}`);
+      bunnyParams.push(`optimize=medium`);
+      
+      // Apply parameters
+      return bunnyParams.length > 0 ? `${url}?${bunnyParams.join('&')}` : url;
     
-    // Add dimensions if specified
-    if (width) params.push(`width=${width}`);
-    if (height) params.push(`height=${height}`);
-    
-    // Add image optimization parameters specific to Cloudflare R2
-    params.push(`format=${format}`);
-    params.push(`quality=${quality}`);
-    params.push(`fit=${fit}`);
-    
-    // For Cloudflare Images API compatibility
-    params.push(`sharpen=1`);
-    
-    // Apply parameters
-    return params.length > 0 ? `${url}?${params.join('&')}` : url;
+    default:
+      // For unknown providers, return the original URL
+      return url;
   }
-  
-  // Check if this is a Bunny.net URL
-  if (url.includes('b-cdn.net')) {
-    const params = [];
-    
-    // Add dimensions if specified
-    if (width) params.push(`width=${width}`);
-    if (height) params.push(`height=${height}`);
-    
-    // Add optimization parameters for Bunny.net
-    params.push(`format=${format}`);
-    params.push(`quality=${quality}`);
-    params.push(`optimize=medium`);
-    
-    // Apply parameters
-    return params.length > 0 ? `${url}?${params.join('&')}` : url;
-  }
-  
-  // For local development or other providers
-  // Just return the original URL if no provider is matched
-  return url;
 }
 
 /**
@@ -87,25 +115,59 @@ export function isVideoSource(source: string): boolean {
 /**
  * Generates appropriate srcSet for responsive images
  * @param url Base image URL
- * @param provider Image provider ('cloudflare' or 'bunny')
  * @returns String containing srcSet attribute value
  */
 export function generateSrcSet(url: string): string {
   if (!url) return '';
   
   // Determine provider
-  const isCloudflare = url.includes('r2.cloudflarestorage.com');
-  const isBunny = url.includes('b-cdn.net');
+  const provider = determineImageProvider(url);
   
-  if (!isCloudflare && !isBunny) return '';
+  switch (provider) {
+    case 'cloudinary':
+      return buildCloudinarySrcSet(url);
+      
+    case 'cloudflare':
+    case 'bunny':
+      // Width breakpoints for responsive images
+      const widths = [320, 480, 640, 768, 1024, 1280, 1536, 1920];
+      
+      return widths
+        .map(w => {
+          const optimizedUrl = getOptimizedImageUrl(url, w);
+          return `${optimizedUrl} ${w}w`;
+        })
+        .join(', ');
+        
+    default:
+      return '';
+  }
+}
+
+/**
+ * Converts a Cloudflare R2 or other URL to a Cloudinary URL
+ * @param url Original image URL
+ * @returns Cloudinary URL
+ */
+export function convertToCloudinaryUrl(url: string): string {
+  if (!url) return '';
   
-  // Width breakpoints for responsive images
-  const widths = [320, 480, 640, 768, 1024, 1280, 1536, 1920];
+  // If already a Cloudinary URL, return as is
+  if (url.includes('cloudinary.com')) return url;
   
-  return widths
-    .map(w => {
-      const optimizedUrl = getOptimizedImageUrl(url, w);
-      return `${optimizedUrl} ${w}w`;
-    })
-    .join(', ');
+  // Extract the filename from the URL or path
+  const filename = url.split('/').pop() || '';
+  
+  // Generate a Cloudinary public ID from the filename
+  // Note: In a real implementation, you would likely need to upload the image to Cloudinary first
+  // or use remote fetching via Cloudinary's fetch feature
+  const publicId = `gallery_images/${filename.replace(/\.[^/.]+$/, '')}`;
+  
+  // Return a Cloudinary URL using a preset transformation
+  return buildCloudinaryUrl(publicId, {
+    width: 800,
+    quality: 80,
+    format: 'auto',
+    crop: 'fill'
+  });
 }
