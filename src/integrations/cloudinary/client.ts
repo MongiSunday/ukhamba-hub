@@ -9,7 +9,7 @@ interface CloudinaryConfig {
  * Cloudinary configuration
  */
 export const cloudinaryConfig: CloudinaryConfig = {
-  cloudName: "your-cloud-name", // Replace with your actual cloud name
+  cloudName: "dtqdq3fqq", // Updated with actual cloud name
   isSecure: true,
 };
 
