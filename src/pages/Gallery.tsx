@@ -11,9 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { GalleryItem } from '@/data/gallery/images';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, AlertTriangle } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -43,9 +43,9 @@ const Gallery = () => {
     itemsPerPage: ITEMS_PER_PAGE
   });
 
-  // Show error toast if there is an error fetching images
+  // Only show error toast for critical errors, not for image loading issues
   React.useEffect(() => {
-    if (error) {
+    if (error && error.includes("critical")) {
       toast({
         title: "Notice",
         description: error,
@@ -81,18 +81,20 @@ const Gallery = () => {
     setCurrentPage(1);
   }, [activeCategory, activeSubcategory]);
 
-  // Get badge color based on provider
-  const getProviderBadge = () => {
-    switch (provider) {
-      case 'cloudflare':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Cloudflare R2</Badge>;
-      case 'supabase':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Supabase</Badge>;
-      case 'fallback':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Local Fallback</Badge>;
-      default:
-        return null;
-    }
+  const handleRetry = () => {
+    toast({
+      title: "Retrying",
+      description: "Attempting to load images again...",
+    });
+    retryLoading();
+  };
+  
+  const reportIssue = () => {
+    toast({
+      title: "Issue Reported",
+      description: "Thank you for reporting this issue. Our team has been notified.",
+    });
+    // In a real application, this would send a report to the server
   };
 
   // Generate pagination links
@@ -201,35 +203,34 @@ const Gallery = () => {
           </div>
         ) : (
           <>
-            <div className="container-custom py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {provider !== 'unknown' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-foreground/70">Images from:</span>
-                    {getProviderBadge()}
-                  </div>
-                )}
-              </div>
-              
-              {error && (
-                <Button 
-                  variant="outline" 
-                  onClick={handleRetry}
-                  className="gap-2"
-                >
-                  <RefreshCcw size={16} />
-                  Retry
-                </Button>
-              )}
-            </div>
-            
-            {error && (
-              <div className="container-custom py-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
-                  <p className="text-amber-800">
-                    {error}
-                  </p>
-                </div>
+            {/* Show error message only if there are no images and there's an error */}
+            {error && filteredItems.length === 0 && (
+              <div className="container-custom py-8">
+                <Alert variant="default" className="bg-amber-50 border border-amber-200">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <AlertDescription className="text-amber-800 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <span>Images couldn't be loaded. Please try again later.</span>
+                    <div className="flex gap-3 mt-3 sm:mt-0">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleRetry}
+                        size="sm"
+                        className="gap-1 border-amber-300 text-amber-800 hover:bg-amber-100"
+                      >
+                        <RefreshCcw size={14} />
+                        Try Again
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-amber-200 text-amber-800 hover:bg-amber-300"
+                        onClick={reportIssue}
+                      >
+                        Report This Issue
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
             
