@@ -34,7 +34,8 @@ export function getOptimizedImageUrl(
   height?: number, 
   options?: {
     quality?: number;
-    format?: 'auto' | 'webp' | 'avif' | 'png' | 'jpeg';
+    // Updated format type to match Cloudinary's expected format types
+    format?: 'auto' | 'webp' | 'png' | 'jpg' | 'gif';
     fit?: 'cover' | 'contain' | 'fill';
   }
 ): string {
