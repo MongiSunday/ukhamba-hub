@@ -74,30 +74,42 @@ export function extractCategoriesFromMapping() {
 export async function fetchGalleryImages() {
   try {
     // In Vite, environment variables need to be prefixed with VITE_
-    // If they're not available directly, fall back to the .env values
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dtqdq3fqq";
     const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY || "249797775448449";
+    const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET || "4jWOc1sTJdY7YncGBjAt6d7g93k";
     
     if (!cloudName || !apiKey) {
       throw new Error('Cloudinary credentials not found');
     }
 
-    // Construct the Cloudinary Admin API URL to list resources in the ukhamba-gallery folder
+    // For Cloudinary Admin API, we need to use the Search API
     const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`;
     
-    // Basic authentication for Cloudinary Admin API using API key
-    const headers = new Headers();
-    headers.append('Authorization', `Basic ${btoa(`${apiKey}:`)}`);
-    
+    // Using a Fetch signature that can't be blocked by CORS
     const params = new URLSearchParams({
-      expression: 'folder=ukhamba-gallery/*',
+      expression: 'folder:ukhamba-gallery/*',
       max_results: '500', // Adjust if needed
+      sort_by: 'public_id',
       type: 'upload'
     });
     
+    // Instead of using the authentication header, we'll use the API key and secret as URL parameters
+    params.append('api_key', apiKey);
+    
+    // Create timestamp for signature
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    params.append('timestamp', timestamp);
+    
+    // Generate signature
+    // Only include API secret in the signature computation, not in the request itself
+    const signatureString = `expression=folder:ukhamba-gallery/*&max_results=500&sort_by=public_id&timestamp=${timestamp}&type=upload${apiSecret}`;
+    
+    // Create SHA-1 hash for signature
+    const signature = await sha1(signatureString);
+    params.append('signature', signature);
+    
     const response = await fetch(`${url}?${params.toString()}`, { 
-      method: 'GET',
-      headers
+      method: 'GET'
     });
     
     if (!response.ok) {
@@ -120,6 +132,17 @@ export async function fetchGalleryImages() {
     console.error('Error fetching gallery images:', error);
     throw error;
   }
+}
+
+/**
+ * Generate SHA-1 hash for Cloudinary signature
+ */
+async function sha1(message: string): Promise<string> {
+  // Use the browser's built-in crypto API to generate the hash
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
