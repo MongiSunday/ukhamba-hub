@@ -1,4 +1,3 @@
-
 /**
  * Service for fetching and processing gallery images from Cloudinary
  */
@@ -73,17 +72,38 @@ export function extractCategoriesFromMapping() {
  */
 export async function fetchGalleryImages() {
   try {
-    // In Vite, environment variables need to be prefixed with VITE_
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dtqdq3fqq";
-    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY || "249797775448449";
-    const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET || "4jWOc1sTJdY7YncGBjAt6d7g93k";
+    // Get Cloudinary credentials from the supabase client
+    const { supabase } = await import('@/integrations/supabase/client');
     
-    if (!cloudName || !apiKey) {
+    // Fetch secrets from Supabase
+    const { data: secretsData, error: secretsError } = await supabase.functions.invoke('get-secrets', {
+      body: {
+        secrets: ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'],
+      },
+    });
+    
+    if (secretsError) {
+      console.error('Error fetching Cloudinary secrets:', secretsError);
+      throw new Error('Failed to fetch Cloudinary credentials from Supabase');
+    }
+    
+    const cloudName = secretsData?.CLOUDINARY_CLOUD_NAME;
+    const apiKey = secretsData?.CLOUDINARY_API_KEY;
+    const apiSecret = secretsData?.CLOUDINARY_API_SECRET;
+    
+    // Provide fallbacks in case the Supabase function fails but keep the console warning
+    const cloudNameToUse = cloudName || "dtqdq3fqq";
+    const apiKeyToUse = apiKey || "249797775448449";
+    const apiSecretToUse = apiSecret || "4jWOc1sTJdY7YncGBjAt6d7g93k";
+    
+    if (!cloudNameToUse || !apiKeyToUse) {
       throw new Error('Cloudinary credentials not found');
     }
+    
+    console.log('Using Cloudinary cloud name:', cloudNameToUse);
 
     // For Cloudinary Admin API, we need to use the Search API
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`;
+    const url = `https://api.cloudinary.com/v1_1/${cloudNameToUse}/resources/search`;
     
     // Using a Fetch signature that can't be blocked by CORS
     const params = new URLSearchParams({
@@ -94,7 +114,7 @@ export async function fetchGalleryImages() {
     });
     
     // Instead of using the authentication header, we'll use the API key and secret as URL parameters
-    params.append('api_key', apiKey);
+    params.append('api_key', apiKeyToUse);
     
     // Create timestamp for signature
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -102,11 +122,13 @@ export async function fetchGalleryImages() {
     
     // Generate signature
     // Only include API secret in the signature computation, not in the request itself
-    const signatureString = `expression=folder:ukhamba-gallery/*&max_results=500&sort_by=public_id&timestamp=${timestamp}&type=upload${apiSecret}`;
+    const signatureString = `expression=folder:ukhamba-gallery/*&max_results=500&sort_by=public_id&timestamp=${timestamp}&type=upload${apiSecretToUse}`;
     
     // Create SHA-1 hash for signature
     const signature = await sha1(signatureString);
     params.append('signature', signature);
+    
+    console.log('Fetching from URL:', `${url}?${params.toString()}`);
     
     const response = await fetch(`${url}?${params.toString()}`, { 
       method: 'GET'
@@ -118,6 +140,7 @@ export async function fetchGalleryImages() {
     }
     
     const data: CloudinaryResponse = await response.json();
+    console.log('Cloudinary response received:', data);
     
     // Process and categorize images based on their folders
     const { resources } = data;
