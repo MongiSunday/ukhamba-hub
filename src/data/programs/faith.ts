@@ -1,4 +1,3 @@
-
 import { Program } from './types';
 
 export const faithPrograms: Program[] = [
@@ -6,7 +5,7 @@ export const faithPrograms: Program[] = [
     id: 'church-partnerships',
     title: 'Church & Religious Leader Partnerships',
     description: 'Encouraging conversations on social issues, healing, and positive change.',
-    image: 'https://images.unsplash.com/photo-1528702748617-c64d49f918af',
+    image: '',
     longDescription: 'Our Faith Partnerships program works collaboratively with religious leaders and faith communities to address social issues including gender-based violence, mental health, and youth development. We provide resources, training, and support that help faith leaders incorporate these topics into their ministry while respecting theological frameworks and community values.',
     impact: 'We have partnered with over 100 faith communities reaching thousands of congregants with messages of hope, healing, and social responsibility.',
     location: 'Churches, mosques, temples, and other places of worship across South Africa',
@@ -17,7 +16,7 @@ export const faithPrograms: Program[] = [
     id: 'support-groups',
     title: 'Support Groups & Prayer Circles',
     description: 'Creating safe spaces for those affected by trauma, addiction, and personal struggles.',
-    image: 'https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8',
+    image: '',
     longDescription: 'Our Support Groups provide safe, confidential spaces where people facing similar challenges can find understanding, encouragement, and practical support. Facilitated by trained leaders, these groups address issues including grief, addiction recovery, and healing from trauma, with spiritual components available for those who desire them.',
     impact: 'We have established over 50 regular support groups serving thousands of participants, with members reporting decreased isolation and improved coping skills.',
     location: 'Community centers, places of worship, and online platforms',
@@ -28,7 +27,7 @@ export const faithPrograms: Program[] = [
     id: 'unity-inclusivity',
     title: 'Unity & Inclusivity Promotion',
     description: 'Strengthening the moral and ethical fabric of our communities by fostering love, respect, and shared values.',
-    image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18',
+    image: '',
     longDescription: 'Our Unity and Inclusivity initiative brings together people from diverse backgrounds to build mutual understanding, respect, and cooperation. Through interfaith dialogues, multicultural celebrations, and community service projects, we create opportunities for meaningful connection across differences, highlighting our shared humanity and common values.',
     impact: 'Our programs have facilitated meaningful connection among thousands of participants from diverse backgrounds, with communities reporting reduced tension and increased collaboration.',
     location: 'Community spaces throughout South Africa',

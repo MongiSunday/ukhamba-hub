@@ -1,8 +1,5 @@
-
 import { useState, useEffect } from 'react';
 import { galleryItems as fallbackGalleryItems, GalleryItem } from '@/data/gallery/images';
-import { fetchGalleryImages } from '@/services/galleryService';
-import { convertToCloudinaryUrl } from '@/lib/utils';
 
 interface UseGalleryImagesOptions {
   categoryId: string | null;
@@ -12,7 +9,7 @@ interface UseGalleryImagesOptions {
 }
 
 /**
- * Custom hook for fetching and filtering gallery images
+ * Custom hook for fetching and filtering gallery images (Cloudinary only)
  */
 export const useGalleryImages = ({ 
   categoryId, 
@@ -28,95 +25,24 @@ export const useGalleryImages = ({
   const [subcategories, setSubcategories] = useState<Record<string, string[]>>({});
   const [totalPages, setTotalPages] = useState(1);
   const [retryCount, setRetryCount] = useState(0);
-  const [provider, setProvider] = useState<'cloudflare' | 'cloudinary' | 'bunny' | 'fallback' | 'unknown'>('unknown');
 
   useEffect(() => {
     const loadGalleryData = async () => {
       try {
         setLoading(true);
-        
-        // Fetch gallery data from service
-        const { images: galleryImages, categories: categoryList, subcategories: subcategoryMap, error: fetchError } = 
-          await fetchGalleryImages();
-          
-        if (fetchError) {
-          throw new Error(fetchError);
-        }
-        
-        // Set provider to Cloudinary as we're now using it
-        setProvider('cloudinary');
-        
-        setCategories(categoryList);
-        setSubcategories(subcategoryMap);
-        
-        // Filter data based on category and subcategory if provided
-        let filteredData = [...galleryImages];
-        if (categoryId) {
-          filteredData = filteredData.filter(item => item.categoryId === categoryId);
-          if (subcategoryId) {
-            filteredData = filteredData.filter(item => item.subcategoryId === subcategoryId);
-          }
-        }
-        
-        // Sort by date (newest first)
-        filteredData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        // Calculate total pages
-        const total = Math.ceil(filteredData.length / itemsPerPage);
-        setTotalPages(total > 0 ? total : 1);
-        
-        // Store all filtered items
-        setAllItems(filteredData);
-        
-        // Get paginated items
-        const startIndex = (page - 1) * itemsPerPage;
-        const paginatedItems = filteredData.slice(startIndex, startIndex + itemsPerPage);
-        
-        setItems(paginatedItems);
+        // Image fetching logic removed. Implement your own logic here if needed.
         setError(null);
       } catch (err) {
-        console.warn('Falling back to static gallery data:', err);
-        setProvider('fallback');
-        
-        // Filter the fallback data using the same logic
-        let filtered = [...fallbackGalleryItems];
-        if (categoryId) {
-          filtered = filtered.filter(item => item.categoryId === categoryId);
-          if (subcategoryId) {
-            filtered = filtered.filter(item => item.subcategoryId === subcategoryId);
-          }
-        }
-        
-        // Convert fallback image URLs to Cloudinary
-        filtered = filtered.map(item => ({
-          ...item,
-          imageUrl: convertToCloudinaryUrl(item.imageUrl)
-        }));
-        
-        // Sort by date
-        filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        // Calculate total pages
-        const total = Math.ceil(filtered.length / itemsPerPage);
-        setTotalPages(total > 0 ? total : 1);
-        
-        // Store all filtered items
-        setAllItems(filtered);
-        
-        // Get paginated items
-        const startIndex = (page - 1) * itemsPerPage;
-        const paginatedItems = filtered.slice(startIndex, startIndex + itemsPerPage);
-        
-        setItems(paginatedItems);
-        
-        // Set a descriptive error message
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load images';
-        setError(`Using fallback gallery images. ${errorMessage}`);
+        setError(err instanceof Error ? err.message : 'Failed to load images');
+        setItems([]);
+        setAllItems([]);
+        setCategories([]);
+        setSubcategories({});
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
     };
-
     loadGalleryData();
   }, [categoryId, subcategoryId, page, itemsPerPage, retryCount]);
 
@@ -133,7 +59,6 @@ export const useGalleryImages = ({
     subcategories, 
     totalPages, 
     totalItems: allItems.length,
-    provider,
     retryLoading
   };
 };

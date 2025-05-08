@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -22,14 +21,14 @@ const Gallery = () => {
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState<number>(-1);
   const { toast } = useToast();
-  
-  // Use the custom hook to fetch gallery images with pagination
-  const { 
-    items: filteredItems, 
-    loading, 
-    error, 
-    categories, 
-    subcategories, 
+
+  // Use the custom hook for gallery data
+  const {
+    items: filteredItems,
+    loading,
+    error,
+    categories,
+    subcategories,
     totalPages,
     totalItems,
     retryLoading
@@ -40,16 +39,20 @@ const Gallery = () => {
     itemsPerPage: ITEMS_PER_PAGE
   });
 
-  // Only show error toast for critical errors, not for image loading issues
+  // Update currentItemIndex when selectedItem or filteredItems change
   useEffect(() => {
-    if (error && error.includes("critical")) {
-      toast({
-        title: "Notice",
-        description: error,
-        variant: "default",
-      });
+    if (selectedItem) {
+      const idx = filteredItems.findIndex(i => i.id === selectedItem.id);
+      setCurrentItemIndex(idx);
+    } else {
+      setCurrentItemIndex(-1);
     }
-  }, [error, toast]);
+  }, [selectedItem, filteredItems]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, activeSubcategory]);
 
   const handleItemClick = (item: GalleryItem) => {
     const index = filteredItems.findIndex(i => i.id === item.id);
@@ -73,11 +76,6 @@ const Gallery = () => {
     }
   };
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeCategory, activeSubcategory]);
-
   const renderLoadingState = () => (
     <div className="container-custom py-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -95,7 +93,6 @@ const Gallery = () => {
       <Header />
       <main className="flex-grow">
         <GalleryHero />
-        
         <GalleryFilters 
           categories={categories}
           subcategories={subcategories}
@@ -104,30 +101,26 @@ const Gallery = () => {
           onCategoryChange={setActiveCategory}
           onSubcategoryChange={setActiveSubcategory}
         />
-        
         {loading ? (
           renderLoadingState()
         ) : (
           <>
             {/* Show error message only if there are no images and there's an error */}
             {error && filteredItems.length === 0 && (
-              <GalleryErrorMessage error={error} onRetry={retryLoading} />
+              <GalleryErrorMessage error={error as string} onRetry={retryLoading} />
             )}
-            
             <GalleryGrid 
               items={filteredItems} 
               onItemClick={handleItemClick}
             />
-            
             <GalleryPagination
               currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
+              totalPages={totalPages || 1}
+              totalItems={totalItems || 0}
               setCurrentPage={setCurrentPage}
             />
           </>
         )}
-
         <GalleryLightbox 
           isOpen={!!selectedItem}
           item={selectedItem}
