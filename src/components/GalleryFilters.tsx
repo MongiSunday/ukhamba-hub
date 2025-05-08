@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { formatDisplayName } from '@/utils/galleryUtils';
 
 interface GalleryFiltersProps {
   categories: string[];
@@ -19,16 +20,6 @@ const GalleryFilters = ({
   onCategoryChange,
   onSubcategoryChange,
 }: GalleryFiltersProps) => {
-  // Function to format display names
-  const formatDisplayName = (name: string) => {
-    // Replace hyphens and underscores with spaces
-    return name.replace(/[-_]/g, ' ')
-      // Capitalize first letter of each word
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   return (
     <div className="py-6 bg-ukhamba-cream bg-opacity-30">
       <div className="container-custom">

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, PlayCircle, Loader2 } from 'lucide-react';
 import { GalleryItem } from '@/data/gallery/images';
 import { getOptimizedImageUrl, isVideoSource, generateSrcSet } from '@/lib/utils';
+import { formatDisplayName } from '@/utils/galleryUtils';
 
 interface GalleryGridProps {
   items: GalleryItem[];
@@ -77,7 +78,7 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
               <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white transform translate-y-2 opacity-90 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                 <h3 className="text-sm font-medium line-clamp-2">{item.title}</h3>
                 <p className="text-xs text-white/80 line-clamp-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  {item.categoryId && formatCategoryName(item.categoryId)}
+                  {item.categoryId && formatDisplayName(item.categoryId)}
                 </p>
               </div>
               {item.featured && (
@@ -89,15 +90,6 @@ const GalleryGrid = ({ items, onItemClick }: GalleryGridProps) => {
       )}
     </div>
   );
-};
-
-// Helper function to format category names for display
-const formatCategoryName = (categoryId: string): string => {
-  return categoryId
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 };
 
 export default GalleryGrid;

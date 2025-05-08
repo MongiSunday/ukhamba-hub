@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for the gallery feature
  */
@@ -70,4 +71,12 @@ export function createGalleryItemFromMetadata({
     date: image.created_at || new Date().toISOString(),
     featured: subcategoryId ? index % 5 === 0 : index % 5 === 0,
   };
+}
+
+/**
+ * Fix missing trailing slash in Cloudinary folder paths
+ */
+export function normalizeCloudinaryFolderPath(path: string): string {
+  if (!path) return '';
+  return path.endsWith('/') ? path : `${path}/`;
 }
