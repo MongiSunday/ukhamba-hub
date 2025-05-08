@@ -73,8 +73,10 @@ export function extractCategoriesFromMapping() {
  */
 export async function fetchGalleryImages() {
   try {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY;
+    // In Vite, environment variables need to be prefixed with VITE_
+    // If they're not available directly, fall back to the .env values
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dtqdq3fqq";
+    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY || "249797775448449";
     
     if (!cloudName || !apiKey) {
       throw new Error('Cloudinary credentials not found');
