@@ -1,9 +1,8 @@
 
 import { CloudflareImage } from '@/types/gallery';
-import { getCloudflareImageUrl } from '@/config/cloudflare';
 
 // TODO: Replace these with your actual Cloudflare image IDs
-const imageIds = [
+export const imageData = [
   {
     id: 'community-event-1',
     cloudflareId: 'example-image-id-1',
@@ -54,9 +53,17 @@ const imageIds = [
   }
 ];
 
-// Generate full image objects with Cloudflare URLs
-export const galleryImages: CloudflareImage[] = imageIds.map(img => ({
-  ...img,
-  thumbnailUrl: getCloudflareImageUrl(img.cloudflareId, 'thumbnail'),
-  fullUrl: getCloudflareImageUrl(img.cloudflareId, 'full')
-}));
+// Function to generate gallery images with URLs (async version)
+export const getGalleryImages = async (): Promise<CloudflareImage[]> => {
+  const { getCloudflareImageUrl } = await import('@/config/cloudflare');
+  
+  const images = await Promise.all(
+    imageData.map(async (img) => ({
+      ...img,
+      thumbnailUrl: await getCloudflareImageUrl(img.cloudflareId, 'thumbnail'),
+      fullUrl: await getCloudflareImageUrl(img.cloudflareId, 'full')
+    }))
+  );
+  
+  return images;
+};

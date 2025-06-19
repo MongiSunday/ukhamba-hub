@@ -1,20 +1,49 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ImageModal from './ImageModal';
-import { galleryImages } from '@/data/gallery/images';
+import { getGalleryImages } from '@/data/gallery/images';
 import { CloudflareImage } from '@/types/gallery';
 
 const ImageGrid = () => {
   const [selectedImage, setSelectedImage] = useState<CloudflareImage | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [galleryImages, setGalleryImages] = useState<CloudflareImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const images = await getGalleryImages();
+        setGalleryImages(images);
+      } catch (error) {
+        console.error('Error loading gallery images:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImages();
+  }, []);
 
   const categories = ['all', ...new Set(galleryImages.map(img => img.category))];
   
   const filteredImages = selectedCategory === 'all' 
     ? galleryImages 
     : galleryImages.filter(img => img.category === selectedCategory);
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="container-custom">
+          <div className="text-center">
+            <p className="text-ukhamba-brown/70">Loading gallery...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-white">
