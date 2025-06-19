@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { CloudflareImage } from '@/types/gallery';
 import { X } from 'lucide-react';
@@ -34,12 +34,21 @@ const ImageModal = ({ image, isOpen, onClose }: ImageModalProps) => {
           </div>
         </DialogHeader>
         
+        <DialogDescription className="sr-only">
+          {image.description || `View full size image of ${image.title}`}
+        </DialogDescription>
+        
         <div className="px-6">
           <div className="aspect-video overflow-hidden rounded-lg mb-4">
             <img
               src={image.fullUrl}
               alt={image.alt}
               className="w-full h-full object-contain bg-gray-50"
+              onError={(e) => {
+                console.error('Full size image failed to load:', image.fullUrl);
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
             />
           </div>
           

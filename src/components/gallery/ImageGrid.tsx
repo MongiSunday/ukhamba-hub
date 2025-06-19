@@ -11,14 +11,19 @@ const ImageGrid = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [galleryImages, setGalleryImages] = useState<CloudflareImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadImages = async () => {
       try {
+        console.log('Loading gallery images...');
         const images = await getGalleryImages();
+        console.log('Gallery images loaded:', images);
         setGalleryImages(images);
+        setError(null);
       } catch (error) {
         console.error('Error loading gallery images:', error);
+        setError('Failed to load gallery images. Please check your Cloudflare configuration.');
       } finally {
         setLoading(false);
       }
@@ -39,6 +44,49 @@ const ImageGrid = () => {
         <div className="container-custom">
           <div className="text-center">
             <p className="text-ukhamba-brown/70">Loading gallery...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="container-custom">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Gallery Loading Error</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <div className="text-sm text-red-500">
+                <p>Please ensure:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Your Cloudflare Account Hash is correctly configured</li>
+                  <li>You have replaced the example image IDs with real Cloudflare image IDs</li>
+                  <li>Your images are uploaded to Cloudflare Images</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (galleryImages.length === 0) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="container-custom">
+          <div className="text-center">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Images Found</h3>
+              <p className="text-yellow-600 mb-4">
+                The gallery is configured but no images are available to display.
+              </p>
+              <p className="text-sm text-yellow-600">
+                Please update the image IDs in the gallery configuration with your actual Cloudflare image IDs.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -77,6 +125,14 @@ const ImageGrid = () => {
                     alt={image.alt}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      console.error('Image failed to load:', image.thumbnailUrl);
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder.svg';
+                    }}
+                    onLoad={() => {
+                      console.log('Image loaded successfully:', image.thumbnailUrl);
+                    }}
                   />
                 </div>
                 <div className="p-4">
