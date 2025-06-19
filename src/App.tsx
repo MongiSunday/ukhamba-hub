@@ -11,6 +11,7 @@ import Programs from "./pages/Programs";
 import GetInvolved from "./pages/GetInvolved";
 import Donations from "./pages/Donations";
 import Contact from "./pages/Contact";
+import Gallery from "./pages/Gallery";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -34,6 +35,7 @@ const App = () => {
             <Route path="/get-involved" element={<GetInvolved />} />
             <Route path="/donate" element={<Donations />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/gallery" element={<Gallery />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
