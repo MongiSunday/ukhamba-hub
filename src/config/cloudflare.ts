@@ -31,8 +31,9 @@ export const getCloudflareConfig = async (): Promise<CloudflareConfig> => {
   } catch (error) {
     console.error('Error in getCloudflareConfig:', error);
     // Fallback configuration for development - but this will likely cause image load failures
+    console.warn('CRITICAL: Cloudflare configuration fetch failed. Falling back to placeholder configuration. THIS WILL LIKELY RESULT IN BROKEN IMAGES. Check Supabase function logs for "get-cloudflare-config" and ensure CLOUDFLARE_ACCOUNT_HASH is correctly set.');
     const fallbackConfig = {
-      accountHash: 'YOUR_ACCOUNT_HASH',
+      accountHash: 'INVALID_FALLBACK_ACCOUNT_HASH_SEE_ERROR_LOGS',
       deliveryUrl: 'https://imagedelivery.net',
       variants: {
         thumbnail: 'thumbnail',
@@ -49,6 +50,10 @@ export const getCloudflareConfig = async (): Promise<CloudflareConfig> => {
 export const getCloudflareImageUrl = async (imageId: string, variant: string = 'public'): Promise<string> => {
   try {
     const config = await getCloudflareConfig();
+    if (config.accountHash === 'INVALID_FALLBACK_ACCOUNT_HASH_SEE_ERROR_LOGS') {
+      console.error('CRITICAL: Cannot generate Cloudflare image URL because accountHash is a non-functional fallback. Gallery will not load images correctly.');
+      return '/placeholder.svg';
+    }
     const url = `${config.deliveryUrl}/${config.accountHash}/${imageId}/${variant}`;
     console.log(`Generated Cloudflare URL for ${imageId}:`, url);
     return url;
