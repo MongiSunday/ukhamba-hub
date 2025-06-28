@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 import ImageModal from './ImageModal';
 import { getGalleryImages } from '@/data/gallery/images';
 import { CloudflareImage } from '@/types/gallery';
@@ -12,33 +14,36 @@ const ImageGrid = () => {
   const [galleryImages, setGalleryImages] = useState<CloudflareImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadImages = async () => {
+    try {
+      console.log('Loading gallery images...');
+      const images = await getGalleryImages();
+      console.log('Gallery images loaded:', images);
+      setGalleryImages(images);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading gallery images:', err);
+      let message = 'Failed to load gallery images from Cloudflare.';
+      if (err instanceof Error) {
+        message = `${message} ${err.message}`;
+      }
+      setError(message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const loadImages = async () => {
-      try {
-        console.log('Loading gallery images...');
-        const images = await getGalleryImages();
-        console.log('Gallery images loaded:', images);
-        setGalleryImages(images);
-        setError(null);
-      } catch (err) {
-        console.error('Error loading gallery images:', err);
-        let message = 'Failed to load gallery images. Please check your Cloudflare configuration.';
-        if (err instanceof Error) {
-          if (!err.message.includes('Cloudflare configuration')) {
-            message = `An unexpected error occurred while trying to load images. ${err.message}`;
-          } else {
-            message = err.message; // Use the more specific error from getCloudflareConfig
-          }
-        }
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadImages();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadImages();
+  };
 
   const categories = ['all', ...new Set(galleryImages.map(img => img.category))];
   
@@ -51,7 +56,8 @@ const ImageGrid = () => {
       <section className="py-16 bg-white">
         <div className="container-custom">
           <div className="text-center">
-            <p className="text-ukhamba-brown/70">Loading gallery...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ukhamba-terracotta mx-auto mb-4"></div>
+            <p className="text-ukhamba-brown/70">Loading images from Cloudflare...</p>
           </div>
         </div>
       </section>
@@ -59,46 +65,22 @@ const ImageGrid = () => {
   }
 
   if (error) {
-    if (galleryImages.length === 0) {
-      // Detailed error if no images loaded at all
-      return (
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <div className="text-center">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">Gallery Loading Error</h3>
-                <p className="text-red-600 mb-4">{error}</p>
-                <div className="text-sm text-red-500">
-                  <p>Please ensure:</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Your Cloudflare Account Hash is correctly configured</li>
-                    <li>You have replaced the example image IDs with real Cloudflare image IDs</li>
-                    <li>Your images are uploaded to Cloudflare Images</li>
-                  </ul>
-                </div>
-              </div>
+    return (
+      <section className="py-16 bg-white">
+        <div className="container-custom">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Images</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={handleRefresh} variant="outline" className="mt-4">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
             </div>
           </div>
-        </section>
-      );
-    } else {
-      // Generic error if some images might have loaded but an error still occurred
-      return (
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <div className="text-center">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-yellow-800 mb-2">Image Loading Issue</h3>
-                <p className="text-yellow-600 mb-4">
-                  Some images may not have loaded correctly. Please try refreshing the page.
-                </p>
-                {error && <p className="text-sm text-yellow-500 mt-2">Error details: {error}</p>}
-              </div>
-            </div>
-          </div>
-        </section>
-      );
-    }
+        </div>
+      </section>
+    );
   }
 
   if (galleryImages.length === 0) {
@@ -109,11 +91,15 @@ const ImageGrid = () => {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
               <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Images Found</h3>
               <p className="text-yellow-600 mb-4">
-                The gallery is configured but no images are available to display.
+                No images were found in your Cloudflare Images account.
               </p>
-              <p className="text-sm text-yellow-600">
-                Please update the image IDs in the gallery configuration with your actual Cloudflare image IDs.
+              <p className="text-sm text-yellow-600 mb-4">
+                Upload some images to your Cloudflare Images account to see them here.
               </p>
+              <Button onClick={handleRefresh} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Gallery
+              </Button>
             </div>
           </div>
         </div>
@@ -124,6 +110,22 @@ const ImageGrid = () => {
   return (
     <section className="py-16 bg-white">
       <div className="container-custom">
+        {/* Header with refresh button */}
+        <div className="flex justify-between items-center mb-8">
+          <p className="text-ukhamba-brown/80">
+            Showing {filteredImages.length} of {galleryImages.length} images
+          </p>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            size="sm"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 justify-center mb-12">
           {categories.map((category) => (
