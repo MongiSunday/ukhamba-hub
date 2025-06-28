@@ -15,11 +15,20 @@ serve(async (req) => {
     const accountHash = Deno.env.get('CLOUDFLARE_ACCOUNT_HASH')
     const apiToken = Deno.env.get('CLOUDFLARE_API_TOKEN')
     
+    console.log('Environment check:', {
+      hasAccountHash: !!accountHash,
+      hasApiToken: !!apiToken,
+      accountHashLength: accountHash?.length,
+      apiTokenLength: apiToken?.length
+    })
+    
     if (!accountHash || !apiToken) {
       throw new Error('Cloudflare credentials not configured')
     }
 
     console.log('Fetching images from Cloudflare Images API...')
+    console.log('Account Hash:', accountHash)
+    console.log('API URL:', `https://api.cloudflare.com/client/v4/accounts/${accountHash}/images/v1`)
     
     // Fetch images from Cloudflare Images API
     const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountHash}/images/v1`, {
@@ -29,22 +38,40 @@ serve(async (req) => {
       }
     })
 
+    console.log('Cloudflare API response status:', response.status, response.statusText)
+
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Cloudflare API error:', errorText)
-      throw new Error(`Cloudflare API error: ${response.status} ${response.statusText}`)
+      console.error('Cloudflare API error response:', errorText)
+      
+      // Try to parse error response
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+        console.error('Parsed error data:', errorData);
+      } catch (e) {
+        console.error('Could not parse error response as JSON');
+      }
+      
+      throw new Error(`Cloudflare API error: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()
-    console.log('Cloudflare API response:', data)
+    console.log('Cloudflare API response structure:', {
+      success: data.success,
+      hasResult: !!data.result,
+      hasImages: !!data.result?.images,
+      imageCount: data.result?.images?.length || 0,
+      errors: data.errors
+    })
 
     if (!data.success) {
       console.error('Cloudflare API returned error:', data.errors)
-      throw new Error('Cloudflare API returned error')
+      throw new Error(`Cloudflare API error: ${JSON.stringify(data.errors)}`)
     }
 
     // Transform Cloudflare images to our format
-    const images = data.result.images.map((image: any) => {
+    const images = (data.result?.images || []).map((image: any) => {
       // Extract category from tags or filename
       let category = 'general'
       if (image.meta?.tags?.length > 0) {
