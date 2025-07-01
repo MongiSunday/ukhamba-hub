@@ -86,6 +86,17 @@ serve(async (req) => {
         else if (filename.includes('gbv')) category = 'gbv-prevention'
       }
 
+      // Use the correct Cloudflare Images URL format
+      // The format should be: https://imagedelivery.net/{account_hash}/{image_id}/{variant}
+      const thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=400,h=400,fit=cover`
+      const fullUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=1200,h=800,fit=contain`
+      
+      console.log(`Image ${image.id} URLs:`, {
+        thumbnail: thumbnailUrl,
+        full: fullUrl,
+        filename: image.filename
+      })
+
       return {
         id: image.id,
         cloudflareId: image.id,
@@ -93,8 +104,8 @@ serve(async (req) => {
         description: image.meta?.description || `Uploaded on ${new Date(image.uploaded).toLocaleDateString()}`,
         alt: image.meta?.alt || image.meta?.title || image.filename || `Image ${image.id}`,
         category: category,
-        thumbnailUrl: `https://imagedelivery.net/${accountHash}/${image.id}/thumbnail`,
-        fullUrl: `https://imagedelivery.net/${accountHash}/${image.id}/public`,
+        thumbnailUrl: thumbnailUrl,
+        fullUrl: fullUrl,
         uploaded: image.uploaded
       }
     })
@@ -103,6 +114,11 @@ serve(async (req) => {
     images.sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime())
 
     console.log(`Successfully processed ${images.length} images`)
+    console.log('Sample image URLs:', images.slice(0, 2).map(img => ({
+      id: img.id,
+      thumbnailUrl: img.thumbnailUrl,
+      fullUrl: img.fullUrl
+    })))
 
     return new Response(
       JSON.stringify({ images }),
