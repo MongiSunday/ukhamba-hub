@@ -27,11 +27,9 @@ serve(async (req) => {
     }
 
     console.log('Fetching images from Cloudflare Images API...')
-    console.log('Account Hash:', accountHash)
-    console.log('API URL:', `https://api.cloudflare.com/client/v4/accounts/${accountHash}/images/v1`)
     
     // Fetch images from Cloudflare Images API
-    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountHash}/images/v1`, {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountHash}/images/v1?per_page=100`, {
       headers: {
         'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/json'
@@ -43,16 +41,6 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Cloudflare API error response:', errorText)
-      
-      // Try to parse error response
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-        console.error('Parsed error data:', errorData);
-      } catch (e) {
-        console.error('Could not parse error response as JSON');
-      }
-      
       throw new Error(`Cloudflare API error: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
@@ -62,7 +50,7 @@ serve(async (req) => {
       hasResult: !!data.result,
       hasImages: !!data.result?.images,
       imageCount: data.result?.images?.length || 0,
-      errors: data.errors
+      sampleImage: data.result?.images?.[0]
     })
 
     if (!data.success) {
@@ -86,15 +74,16 @@ serve(async (req) => {
         else if (filename.includes('gbv')) category = 'gbv-prevention'
       }
 
-      // Use the correct Cloudflare Images URL format
-      // The format should be: https://imagedelivery.net/{account_hash}/{image_id}/{variant}
-      const thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=400,h=400,fit=cover`
-      const fullUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=1200,h=800,fit=contain`
+      // Use the public delivery URL - this should be accessible without authentication
+      const baseUrl = `https://imagedelivery.net/${accountHash}/${image.id}`
+      const thumbnailUrl = `${baseUrl}/w=400,h=400,fit=cover,q=80`
+      const fullUrl = `${baseUrl}/w=1200,h=800,fit=contain,q=90`
       
-      console.log(`Image ${image.id} URLs:`, {
-        thumbnail: thumbnailUrl,
-        full: fullUrl,
-        filename: image.filename
+      console.log(`Processing image ${image.id}:`, {
+        filename: image.filename,
+        thumbnailUrl,
+        fullUrl,
+        variants: image.variants || 'No variants found'
       })
 
       return {
@@ -114,11 +103,7 @@ serve(async (req) => {
     images.sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime())
 
     console.log(`Successfully processed ${images.length} images`)
-    console.log('Sample image URLs:', images.slice(0, 2).map(img => ({
-      id: img.id,
-      thumbnailUrl: img.thumbnailUrl,
-      fullUrl: img.fullUrl
-    })))
+    console.log('Sample processed image:', images[0])
 
     return new Response(
       JSON.stringify({ images }),
