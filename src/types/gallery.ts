@@ -8,6 +8,8 @@ export interface CloudflareImage {
   cloudflareId: string;
   thumbnailUrl: string;
   fullUrl: string;
+  uploaded?: string;
+  originalFilename?: string;
 }
 
 export interface CloudflareConfig {

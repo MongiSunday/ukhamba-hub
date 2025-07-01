@@ -60,58 +60,81 @@ serve(async (req) => {
 
     // Transform Cloudflare images to our format
     const images = (data.result?.images || []).map((image: any) => {
-      // Extract category from tags or filename
+      // Extract category and title from filename
       let category = 'general'
-      if (image.meta?.tags?.length > 0) {
-        category = image.meta.tags[0]
-      } else if (image.filename) {
-        // Try to extract category from filename patterns
+      let title = image.filename || `Image ${image.id}`
+      
+      if (image.filename) {
         const filename = image.filename.toLowerCase()
-        if (filename.includes('community')) category = 'community-events'
-        else if (filename.includes('youth')) category = 'youth-programs'
-        else if (filename.includes('rural')) category = 'rural-development'
-        else if (filename.includes('faith')) category = 'faith-initiatives'
-        else if (filename.includes('gbv')) category = 'gbv-prevention'
+        
+        // Categorize based on filename patterns
+        if (filename.includes('community') || filename.includes('multicultural') || filename.includes('celebrating')) {
+          category = 'community-events'
+        } else if (filename.includes('youth') || filename.includes('entertainment') || filename.includes('motivation')) {
+          category = 'youth-programs'
+        } else if (filename.includes('reaching') || filename.includes('providing') || filename.includes('introducing')) {
+          category = 'rural-development'
+        } else if (filename.includes('counseling') || filename.includes('counselling') || filename.includes('professional')) {
+          category = 'faith-initiatives'
+        } else if (filename.includes('virginity') || filename.includes('traditional') || filename.includes('culture')) {
+          category = 'cultural-programs'
+        } else if (filename.includes('sports') || filename.includes('gymnastics') || filename.includes('promoting')) {
+          category = 'sports-recreation'
+        }
+        
+        // Clean up title - remove file extension and improve formatting
+        title = image.filename.replace(/\.[^/.]+$/, '').replace(/\d+$/, '').trim()
+        title = title.replace(/&/g, 'and').replace(/_/g, ' ')
       }
 
-      // Use the variants provided by Cloudflare
-      // From the logs, I can see variants like: 
-      // ["https://imagedelivery.net/NX5JuAHapC5vfV6t-dMeGg/...", "..."]
+      // Use the variants provided by Cloudflare with higher quality settings
       let thumbnailUrl = ''
       let fullUrl = ''
       
       if (image.variants && image.variants.length > 0) {
-        // Use the first variant as thumbnail, second as full (if available)
+        // Find specific variants or use the provided URLs with better quality
         thumbnailUrl = image.variants.find((v: string) => v.includes('/thumbnail')) || image.variants[0]
         fullUrl = image.variants.find((v: string) => v.includes('/public')) || image.variants[image.variants.length - 1]
+        
+        // Enhance thumbnail quality by appending quality parameters
+        if (thumbnailUrl && !thumbnailUrl.includes('?')) {
+          thumbnailUrl = `${thumbnailUrl}?quality=90&fit=cover&width=600&height=400`
+        }
       } else {
-        // Fallback to the account hash format if no variants
-        thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/thumbnail`
+        // Fallback with higher quality settings
+        thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=600,h=400,fit=cover,q=90`
         fullUrl = `https://imagedelivery.net/${accountHash}/${image.id}/public`
       }
       
       console.log(`Processing image ${image.id}:`, {
         filename: image.filename,
+        title,
+        category,
         thumbnailUrl,
-        fullUrl,
-        variants: image.variants || 'No variants found'
+        fullUrl
       })
 
       return {
         id: image.id,
         cloudflareId: image.id,
-        title: image.meta?.title || image.filename || `Image ${image.id}`,
-        description: image.meta?.description || `Uploaded on ${new Date(image.uploaded).toLocaleDateString()}`,
-        alt: image.meta?.alt || image.meta?.title || image.filename || `Image ${image.id}`,
+        title: title,
+        description: `${category.replace('-', ' ')} image`,
+        alt: title,
         category: category,
         thumbnailUrl: thumbnailUrl,
         fullUrl: fullUrl,
-        uploaded: image.uploaded
+        uploaded: image.uploaded,
+        originalFilename: image.filename
       }
     })
 
-    // Sort by upload date (newest first)
-    images.sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime())
+    // Sort by category first, then by title for better organization
+    images.sort((a: any, b: any) => {
+      if (a.category !== b.category) {
+        return a.category.localeCompare(b.category)
+      }
+      return a.title.localeCompare(b.title)
+    })
 
     console.log(`Successfully processed ${images.length} images`)
     console.log('Sample processed image:', images[0])
