@@ -74,10 +74,21 @@ serve(async (req) => {
         else if (filename.includes('gbv')) category = 'gbv-prevention'
       }
 
-      // Use the public delivery URL - this should be accessible without authentication
-      const baseUrl = `https://imagedelivery.net/${accountHash}/${image.id}`
-      const thumbnailUrl = `${baseUrl}/w=400,h=400,fit=cover,q=80`
-      const fullUrl = `${baseUrl}/w=1200,h=800,fit=contain,q=90`
+      // Use the variants provided by Cloudflare
+      // From the logs, I can see variants like: 
+      // ["https://imagedelivery.net/NX5JuAHapC5vfV6t-dMeGg/...", "..."]
+      let thumbnailUrl = ''
+      let fullUrl = ''
+      
+      if (image.variants && image.variants.length > 0) {
+        // Use the first variant as thumbnail, second as full (if available)
+        thumbnailUrl = image.variants.find((v: string) => v.includes('/thumbnail')) || image.variants[0]
+        fullUrl = image.variants.find((v: string) => v.includes('/public')) || image.variants[image.variants.length - 1]
+      } else {
+        // Fallback to the account hash format if no variants
+        thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/thumbnail`
+        fullUrl = `https://imagedelivery.net/${accountHash}/${image.id}/public`
+      }
       
       console.log(`Processing image ${image.id}:`, {
         filename: image.filename,
