@@ -2,6 +2,7 @@
 import React from 'react';
 import { Users, Award, BookOpen, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useCloudflareImages } from '@/hooks/useCloudflareImages';
 
 const impactStats = [
   {
@@ -42,6 +43,9 @@ const successStories = [
 ];
 
 const CommunityImpact = () => {
+  const { getRandomImage } = useCloudflareImages('community');
+  const impactImage = getRandomImage();
+
   return (
     <section className="py-16 bg-white">
       <div className="container-custom">
@@ -99,8 +103,8 @@ const CommunityImpact = () => {
               <div className="relative">
                 <div className="absolute -top-4 -left-4 w-full h-full bg-ukhamba-teal rounded-lg"></div>
                 <img 
-                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c" 
-                  alt="Community impact" 
+                  src={impactImage?.fullUrl || "https://images.unsplash.com/photo-1519389950473-47ba0277781c"} 
+                  alt={impactImage?.alt || "Community impact"} 
                   className="rounded-lg relative z-10"
                 />
               </div>

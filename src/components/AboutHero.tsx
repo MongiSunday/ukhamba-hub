@@ -1,7 +1,11 @@
 
 import React from 'react';
+import { useCloudflareImages } from '@/hooks/useCloudflareImages';
 
 const AboutHero = () => {
+  const { getRandomImage } = useCloudflareImages('community');
+  const heroImage = getRandomImage();
+
   return (
     <section className="py-16 md:py-24 bg-gradient-to-r from-ukhamba-cream to-ukhamba-sand overflow-hidden">
       <div className="container-custom">
@@ -39,8 +43,8 @@ const AboutHero = () => {
           <div className="relative">
             <div className="bg-white p-2 shadow-xl rounded-lg transform rotate-2">
               <img 
-                src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
-                alt="Team working together" 
+                src={heroImage?.fullUrl || "https://images.unsplash.com/photo-1605810230434-7631ac76ec81"} 
+                alt={heroImage?.alt || "Team working together"} 
                 className="w-full h-auto rounded"
               />
             </div>
