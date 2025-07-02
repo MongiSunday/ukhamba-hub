@@ -7,8 +7,10 @@ import { CloudflareImage } from '@/types/gallery';
 
 const Hero = () => {
   const [currentImage, setCurrentImage] = useState<CloudflareImage | null>(null);
+  const [nextImage, setNextImage] = useState<CloudflareImage | null>(null);
   const [images, setImages] = useState<CloudflareImage[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -29,26 +31,49 @@ const Hero = () => {
   useEffect(() => {
     if (images.length > 0) {
       const interval = setInterval(() => {
-        setCurrentIndex((prevIndex) => {
-          const nextIndex = (prevIndex + 1) % images.length;
+        const nextIndex = (currentIndex + 1) % images.length;
+        setNextImage(images[nextIndex]);
+        setIsTransitioning(true);
+        
+        // After transition starts, update current image and reset
+        setTimeout(() => {
           setCurrentImage(images[nextIndex]);
-          return nextIndex;
-        });
-      }, 5000); // Change image every 5 seconds
+          setCurrentIndex(nextIndex);
+          setIsTransitioning(false);
+          setNextImage(null);
+        }, 1000); // 1 second crossfade duration
+      }, 600000); // Change image every 10 minutes
 
       return () => clearInterval(interval);
     }
-  }, [images]);
+  }, [images, currentIndex]);
 
   return (
     <section className="relative py-16 md:py-24 bg-gradient-to-r from-ukhamba-cream to-ukhamba-sand overflow-hidden">
+      {/* Current background image */}
       {currentImage && (
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-10 transition-opacity duration-1000"
-          style={{ backgroundImage: `url(${currentImage.fullUrl})` }}
+          style={{ 
+            backgroundImage: `url(${currentImage.fullUrl})`,
+            opacity: isTransitioning ? 0 : 0.1
+          }}
         />
       )}
-      {!currentImage && (
+      
+      {/* Next background image for crossfade */}
+      {nextImage && isTransitioning && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+          style={{ 
+            backgroundImage: `url(${nextImage.fullUrl})`,
+            opacity: 0.1
+          }}
+        />
+      )}
+      
+      {/* Fallback image when no Cloudflare images are loaded */}
+      {!currentImage && !nextImage && (
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158')] bg-cover bg-center opacity-10"></div>
       )}
       <div className="container-custom relative z-10">
