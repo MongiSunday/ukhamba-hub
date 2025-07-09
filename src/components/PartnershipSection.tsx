@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,8 +43,8 @@ const PartnershipSection = () => {
                 <p className="text-sm">Tailored impact reporting for stakeholders</p>
               </div>
               <div className="mt-6">
-                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-                  Explore Corporate Partnerships
+                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+                  <Link to="/contact">Explore Corporate Partnerships</Link>
                 </Button>
               </div>
             </CardContent>
@@ -72,8 +73,8 @@ const PartnershipSection = () => {
                 <p className="text-sm">Exclusive recognition for sponsored programs</p>
               </div>
               <div className="mt-6">
-                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-                  View Sponsorship Opportunities
+                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+                  <Link to="/contact">View Sponsorship Opportunities</Link>
                 </Button>
               </div>
             </CardContent>
@@ -102,8 +103,8 @@ const PartnershipSection = () => {
                 <p className="text-sm">Expanded reach and impact reporting</p>
               </div>
               <div className="mt-6">
-                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-                  Discuss Grant Opportunities
+                <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+                  <Link to="/contact">Discuss Grant Opportunities</Link>
                 </Button>
               </div>
             </CardContent>

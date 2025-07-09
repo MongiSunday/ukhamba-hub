@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import ProgramCard from './ProgramCard';
 import { Button } from '@/components/ui/button';
 import { programCategories } from '@/data/programs';
@@ -37,8 +38,9 @@ const ProgramCategories = () => {
               <Button 
                 variant="outline" 
                 className="border-ukhamba-terracotta text-ukhamba-terracotta hover:bg-ukhamba-terracotta hover:text-white"
+                asChild
               >
-                View All {category.title} Programs
+                <Link to="/programs">View All {category.title} Programs</Link>
               </Button>
             </div>
           </div>
@@ -52,14 +54,14 @@ const ProgramCategories = () => {
             replaces fear, education replaces ignorance, and community replaces isolation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-              Volunteer With Us
+            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+              <Link to="/get-involved">Volunteer With Us</Link>
             </Button>
-            <Button className="bg-ukhamba-teal hover:bg-ukhamba-teal/90 text-white">
-              Donate Now
+            <Button className="bg-ukhamba-teal hover:bg-ukhamba-teal/90 text-white" asChild>
+              <Link to="/donate">Donate Now</Link>
             </Button>
-            <Button variant="outline" className="border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white">
-              Partner With Us
+            <Button variant="outline" className="border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white" asChild>
+              <Link to="/contact">Partner With Us</Link>
             </Button>
           </div>
         </div>

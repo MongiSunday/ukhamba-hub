@@ -94,9 +94,9 @@ const CommunityImpact = () => {
                 <Link to="/get-involved" className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white px-6 py-3 rounded-md font-medium inline-flex items-center justify-center">
                   Get Involved
                 </Link>
-                <button className="border border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white px-6 py-3 rounded-md font-medium transition-colors">
+                <Link to="/donate" className="border border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white px-6 py-3 rounded-md font-medium transition-colors inline-flex items-center justify-center">
                   Donate Now
-                </button>
+                </Link>
               </div>
             </div>
             <div>

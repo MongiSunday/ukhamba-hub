@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Share2, Calendar, Users, MapPin } from 'lucide-react';
 
@@ -57,11 +58,11 @@ const ProgramDetail = ({
           </div>
           
           <div className="flex flex-wrap gap-4 mb-10">
-            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-              Join This Program
+            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+              <Link to="/get-involved">Join This Program</Link>
             </Button>
-            <Button variant="outline" className="border-ukhamba-teal text-ukhamba-teal hover:bg-ukhamba-teal hover:text-white">
-              Donate
+            <Button variant="outline" className="border-ukhamba-teal text-ukhamba-teal hover:bg-ukhamba-teal hover:text-white" asChild>
+              <Link to="/donate">Donate</Link>
             </Button>
             <Button variant="ghost" className="text-foreground/70">
               <Share2 size={18} className="mr-2" /> Share
@@ -85,8 +86,8 @@ const ProgramDetail = ({
             <p className="mb-4">
               Interested in participating or supporting this program? Contact us to learn more.
             </p>
-            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white">
-              Contact Us
+            <Button className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
+              <Link to="/contact">Contact Us</Link>
             </Button>
           </div>
         </div>
