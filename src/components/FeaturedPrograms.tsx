@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { featuredPrograms } from '@/data/programs';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const FeaturedPrograms = () => {
   return (
@@ -40,7 +41,7 @@ const FeaturedPrograms = () => {
                   className="w-full border-ukhamba-teal text-ukhamba-teal hover:bg-ukhamba-teal hover:text-white"
                   asChild
                 >
-                  <Link to={`/programs/${program.id}`}>Learn More</Link>
+                  <Link to={`/programs/${program.id}`} onClick={scrollToTop}>Learn More</Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -52,7 +53,7 @@ const FeaturedPrograms = () => {
             className="bg-ukhamba-teal hover:bg-ukhamba-teal/90 text-white"
             asChild
           >
-            <Link to="/programs">View All Programs</Link>
+            <Link to="/programs" onClick={scrollToTop}>View All Programs</Link>
           </Button>
         </div>
       </div>

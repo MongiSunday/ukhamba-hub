@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const ProgramHero = () => {
   return (
@@ -20,14 +21,14 @@ const ProgramHero = () => {
               className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white"
               asChild
             >
-              <Link to="/get-involved">Get Involved</Link>
+              <Link to="/get-involved" onClick={scrollToTop}>Get Involved</Link>
             </Button>
             <Button 
               variant="outline" 
               className="border-ukhamba-teal text-ukhamba-teal hover:bg-ukhamba-teal hover:text-white"
               asChild
             >
-              <Link to="/donate">Support Our Work</Link>
+              <Link to="/donate" onClick={scrollToTop}>Support Our Work</Link>
             </Button>
           </div>
         </div>

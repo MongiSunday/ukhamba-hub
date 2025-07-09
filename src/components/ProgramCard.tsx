@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 interface ProgramCardProps {
   title: string;
@@ -36,7 +37,7 @@ const ProgramCard = ({ title, description, image, programId }: ProgramCardProps)
           className="p-0 text-ukhamba-terracotta hover:text-ukhamba-terracotta/80 hover:bg-transparent"
           asChild
         >
-          <Link to={`/programs/${programId}`}>
+          <Link to={`/programs/${programId}`} onClick={scrollToTop}>
             Learn More <ChevronRight size={16} className="ml-1" />
           </Link>
         </Button>

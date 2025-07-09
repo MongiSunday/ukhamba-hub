@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { getGalleryImages } from '@/data/gallery/images';
 import { CloudflareImage } from '@/types/gallery';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const Hero = () => {
   const [currentImage, setCurrentImage] = useState<CloudflareImage | null>(null);
@@ -89,14 +90,14 @@ const Hero = () => {
               className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white px-8 py-6 text-lg"
               asChild
             >
-              <Link to="/get-involved">Get Involved</Link>
+              <Link to="/get-involved" onClick={scrollToTop}>Get Involved</Link>
             </Button>
             <Button 
               variant="outline" 
               className="border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white px-8 py-6 text-lg"
               asChild
             >
-              <Link to="/donate">Donate Now</Link>
+              <Link to="/donate" onClick={scrollToTop}>Donate Now</Link>
             </Button>
           </div>
         </div>

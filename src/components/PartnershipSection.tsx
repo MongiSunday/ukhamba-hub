@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CheckCircle } from 'lucide-react';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const PartnershipSection = () => {
   return (
@@ -44,7 +45,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/contact">Explore Corporate Partnerships</Link>
+                  <Link to="/contact" onClick={scrollToTop}>Explore Corporate Partnerships</Link>
                 </Button>
               </div>
             </CardContent>
@@ -74,7 +75,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/contact">View Sponsorship Opportunities</Link>
+                  <Link to="/contact" onClick={scrollToTop}>View Sponsorship Opportunities</Link>
                 </Button>
               </div>
             </CardContent>
@@ -104,7 +105,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/contact">Discuss Grant Opportunities</Link>
+                  <Link to="/contact" onClick={scrollToTop}>Discuss Grant Opportunities</Link>
                 </Button>
               </div>
             </CardContent>

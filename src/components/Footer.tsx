@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Mail, MapPin, Phone } from 'lucide-react';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const Footer = () => {
   return (
@@ -32,27 +33,27 @@ const Footer = () => {
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/about" className="text-white/70 hover:text-ukhamba-gold transition-colors">
+                <Link to="/about" className="text-white/70 hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/programs" className="text-white/70 hover:text-ukhamba-gold transition-colors">
+                <Link to="/programs" className="text-white/70 hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
                   Our Programs
                 </Link>
               </li>
               <li>
-                <Link to="/gallery" className="text-white/70 hover:text-ukhamba-gold transition-colors">
+                <Link to="/gallery" className="text-white/70 hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
                   Gallery
                 </Link>
               </li>
               <li>
-                <Link to="/get-involved" className="text-white/70 hover:text-ukhamba-gold transition-colors">
+                <Link to="/get-involved" className="text-white/70 hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
                   Get Involved
                 </Link>
               </li>
               <li>
-                <Link to="/donate" className="text-white/70 hover:text-ukhamba-gold transition-colors">
+                <Link to="/donate" className="text-white/70 hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
                   Donate
                 </Link>
               </li>
@@ -92,7 +93,7 @@ const Footer = () => {
             <p className="text-white/70 mb-4">
               To educate, empower, and uplift individuals in South African communities through informative content, resources, and engagement on critical social issues.
             </p>
-            <Link to="/about" className="text-ukhamba-gold hover:text-ukhamba-gold/80 font-medium">
+            <Link to="/about" className="text-ukhamba-gold hover:text-ukhamba-gold/80 font-medium" onClick={scrollToTop}>
               Learn More About Our Work →
             </Link>
           </div>
@@ -106,10 +107,10 @@ const Footer = () => {
           </p>
           
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <Link to="/privacy" className="text-white/50 text-sm hover:text-ukhamba-gold transition-colors">
+            <Link to="/privacy" className="text-white/50 text-sm hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-white/50 text-sm hover:text-ukhamba-gold transition-colors">
+            <Link to="/terms" className="text-white/50 text-sm hover:text-ukhamba-gold transition-colors" onClick={scrollToTop}>
               Terms of Service
             </Link>
           </div>

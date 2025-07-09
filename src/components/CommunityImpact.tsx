@@ -3,6 +3,7 @@ import React from 'react';
 import { Users, Award, BookOpen, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCloudflareImages } from '@/hooks/useCloudflareImages';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const impactStats = [
   {
@@ -91,10 +92,10 @@ const CommunityImpact = () => {
                 makes a difference in the lives of thousands of South Africans.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/get-involved" className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white px-6 py-3 rounded-md font-medium inline-flex items-center justify-center">
+                <Link to="/get-involved" className="bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white px-6 py-3 rounded-md font-medium inline-flex items-center justify-center" onClick={scrollToTop}>
                   Get Involved
                 </Link>
-                <Link to="/donate" className="border border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white px-6 py-3 rounded-md font-medium transition-colors inline-flex items-center justify-center">
+                <Link to="/donate" className="border border-ukhamba-gold text-ukhamba-gold hover:bg-ukhamba-gold hover:text-white px-6 py-3 rounded-md font-medium transition-colors inline-flex items-center justify-center" onClick={scrollToTop}>
                   Donate Now
                 </Link>
               </div>

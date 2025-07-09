@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { scrollToTop } from '@/hooks/useScrollToTop';
 
 const GetInvolvedHero = () => {
   return (
@@ -27,7 +28,7 @@ const GetInvolvedHero = () => {
               className="border-ukhamba-teal text-ukhamba-teal hover:bg-ukhamba-teal hover:text-white"
               asChild
             >
-              <Link to="/donate">Make a Donation</Link>
+              <Link to="/donate" onClick={scrollToTop}>Make a Donation</Link>
             </Button>
           </div>
         </div>
