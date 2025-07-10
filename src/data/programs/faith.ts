@@ -5,7 +5,7 @@ export const faithPrograms: Program[] = [
     id: 'church-partnerships',
     title: 'Church & Religious Leader Partnerships',
     description: 'Encouraging conversations on social issues, healing, and positive change.',
-    image: 'https://imagedelivery.net/NX5JuAHapC5vfV6t-dMeGg/e5b4ac45-da7b-41e8-390b-a55ea4a14100/public',
+    image: 'https://imagedelivery.net/NX5JuAHapC5vfV6t-dMeGg/cfe2fe05-7955-4790-9cda-6e5131bc9800/public',
     longDescription: 'Our Faith Partnerships program works collaboratively with religious leaders and faith communities to address social issues including gender-based violence, mental health, and youth development. We provide resources, training, and support that help faith leaders incorporate these topics into their ministry while respecting theological frameworks and community values.',
     impact: 'We have partnered with over 100 faith communities reaching thousands of congregants with messages of hope, healing, and social responsibility.',
     location: 'Churches, mosques, temples, and other places of worship across South Africa',
