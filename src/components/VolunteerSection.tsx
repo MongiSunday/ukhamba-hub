@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Form, 
   FormControl, 
@@ -33,7 +34,7 @@ const formSchema = z.object({
 type VolunteerFormValues = z.infer<typeof formSchema>;
 
 const VolunteerSection = () => {
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<VolunteerFormValues>({
     resolver: zodResolver(formSchema),
@@ -48,13 +49,32 @@ const VolunteerSection = () => {
     },
   });
 
-  function onSubmit(data: VolunteerFormValues) {
-    console.log(data);
-    toast({
-      title: "Volunteer application submitted!",
-      description: "Thank you for your interest in volunteering. We'll be in touch soon.",
-    });
-    form.reset();
+  async function onSubmit(data: VolunteerFormValues) {
+    setIsSubmitting(true);
+    
+    try {
+      const { agreeToTerms, interests, ...formData } = data;
+      const submissionData = {
+        ...formData,
+        interests: [interests], // Convert to array format expected by backend
+      };
+
+      const { error } = await supabase.functions.invoke('send-volunteer-application', {
+        body: submissionData
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Volunteer application submitted! We'll be in touch soon.");
+      form.reset();
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toast.error('Failed to submit application. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -218,8 +238,9 @@ const VolunteerSection = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white"
+                  disabled={isSubmitting}
                 >
-                  Submit Application
+                  {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </Button>
               </form>
             </Form>

@@ -1,1 +1,13 @@
 project_id = "nrpheailknubabyvsggy"
+
+[functions.send-contact-email]
+verify_jwt = false
+
+[functions.send-newsletter-confirmation]
+verify_jwt = false
+
+[functions.send-volunteer-application]
+verify_jwt = false
+
+[functions.send-donation-confirmation]
+verify_jwt = false

@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -14,7 +15,6 @@ import DonationPaymentMethod from './DonationPaymentMethod';
 import DonationSummary from './DonationSummary';
 
 const DonationForm: React.FC = () => {
-  const { toast } = useToast();
   const [customAmount, setCustomAmount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -31,21 +31,30 @@ const DonationForm: React.FC = () => {
   async function onSubmit(data: DonationFormValues) {
     setIsSubmitting(true);
     try {
-      // Simulate API call with setTimeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log(data);
-      toast({
-        title: "Thank you for your donation!",
-        description: "Your contribution will help support our programs and initiatives.",
+      const [firstName, ...lastNameParts] = data.fullName.split(' ');
+      const lastName = lastNameParts.join(' ') || firstName;
+      
+      const donationData = {
+        firstName,
+        lastName,
+        email: data.email,
+        amount: data.amount,
+        isMonthly: false, // This will be determined by payment processing
+      };
+
+      const { error } = await supabase.functions.invoke('send-donation-confirmation', {
+        body: donationData
       });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Thank you for your donation! A confirmation email has been sent.");
       form.reset();
     } catch (error) {
-      console.error(error);
-      toast({
-        title: "Something went wrong",
-        description: "There was an error processing your donation. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error processing donation:', error);
+      toast.error("There was an error processing your donation. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

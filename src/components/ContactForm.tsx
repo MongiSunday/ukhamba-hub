@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define form schema with Zod
 const contactFormSchema = z.object({
@@ -34,16 +35,26 @@ const ContactForm = () => {
   });
 
   // Handle form submission
-  const onSubmit = (data: ContactFormValues) => {
+  const onSubmit = async (data: ContactFormValues) => {
     setIsSubmitting(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      console.log('Form data submitted:', data);
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: data
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast.success('Your message has been sent successfully!');
       form.reset();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
