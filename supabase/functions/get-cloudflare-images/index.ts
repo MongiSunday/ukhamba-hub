@@ -96,13 +96,13 @@ serve(async (req) => {
         thumbnailUrl = image.variants.find((v: string) => v.includes('/thumbnail')) || image.variants[0]
         fullUrl = image.variants.find((v: string) => v.includes('/public')) || image.variants[image.variants.length - 1]
         
-        // Enhance thumbnail quality by appending quality parameters
+        // Enhance thumbnail quality with higher resolution and quality
         if (thumbnailUrl && !thumbnailUrl.includes('?')) {
-          thumbnailUrl = `${thumbnailUrl}?quality=90&fit=cover&width=600&height=400`
+          thumbnailUrl = `${thumbnailUrl}?quality=95&fit=cover&width=800&height=600`
         }
       } else {
-        // Fallback with higher quality settings
-        thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=600,h=400,fit=cover,q=90`
+        // Fallback with higher quality settings - use larger dimensions for crispy thumbnails
+        thumbnailUrl = `https://imagedelivery.net/${accountHash}/${image.id}/w=800,h=600,fit=cover,q=95`
         fullUrl = `https://imagedelivery.net/${accountHash}/${image.id}/public`
       }
       
