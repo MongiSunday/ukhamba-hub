@@ -22,12 +22,22 @@ const FeaturedPrograms = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {featuredPrograms.map((program) => (
             <Card key={program.id} className="overflow-hidden card-hover">
-              <div className="aspect-video w-full overflow-hidden">
-                <img 
-                  src={program.image} 
-                  alt={program.title} 
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                />
+              <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-ukhamba-cream to-ukhamba-sand">
+                {program.image ? (
+                  <img 
+                    src={program.image} 
+                    alt={program.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-ukhamba-terracotta font-semibold">
+                    {program.title}
+                  </div>
+                )}
               </div>
               <CardHeader>
                 <CardTitle className="text-xl text-ukhamba-terracotta">{program.title}</CardTitle>

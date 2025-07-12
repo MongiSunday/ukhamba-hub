@@ -104,7 +104,7 @@ const ImageModal = ({ image, imageIndex, images, isOpen, onClose, onNavigate }: 
               onError={(e) => {
                 console.error('Full size image failed to load:', image.fullUrl);
                 const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg';
+                target.style.display = 'none';
               }}
             />
           </div>

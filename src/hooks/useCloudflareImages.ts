@@ -11,16 +11,35 @@ export const useCloudflareImages = (category?: string) => {
     const loadImages = async () => {
       try {
         setLoading(true);
+        setError(null);
         const allImages = await getGalleryImages();
         
+        let filteredImages = allImages;
+        
         if (category) {
-          const filteredImages = allImages.filter(img => 
+          filteredImages = allImages.filter(img => 
             img.category.includes(category) || 
             img.title.toLowerCase().includes(category.toLowerCase())
           );
-          setImages(filteredImages.length > 0 ? filteredImages : allImages.slice(0, 5));
-        } else {
-          setImages(allImages);
+          // If no category matches, fallback to first few images
+          if (filteredImages.length === 0) {
+            filteredImages = allImages.slice(0, 8);
+          }
+        }
+        
+        setImages(filteredImages);
+        
+        // Preload first few image thumbnails for better performance
+        if (filteredImages.length > 0) {
+          filteredImages.slice(0, 6).forEach(img => {
+            if (img.thumbnailUrl) {
+              const link = document.createElement('link');
+              link.rel = 'preload';
+              link.as = 'image';
+              link.href = img.thumbnailUrl;
+              document.head.appendChild(link);
+            }
+          });
         }
       } catch (err) {
         console.error('Failed to load Cloudflare images:', err);

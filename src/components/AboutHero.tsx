@@ -42,11 +42,14 @@ const AboutHero = () => {
           </div>
           <div className="relative">
             <div className="bg-white p-2 shadow-xl rounded-lg transform rotate-2">
-              <img 
-                src={heroImage?.fullUrl || "https://images.unsplash.com/photo-1605810230434-7631ac76ec81"} 
-                alt={heroImage?.alt || "Team working together"} 
-                className="w-full h-auto rounded"
-              />
+              {heroImage && (
+                <img 
+                  src={heroImage.fullUrl} 
+                  alt={heroImage.alt || "Team working together"}
+                  loading="eager"
+                  className="w-full h-auto rounded object-cover"
+                />
+              )}
             </div>
             <div className="absolute -bottom-8 -left-8 bg-ukhamba-terracotta p-8 rounded-lg shadow-lg z-10">
               <p className="text-white font-bold text-xl">Together, we rise.</p>

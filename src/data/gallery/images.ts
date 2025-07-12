@@ -33,8 +33,4 @@ export const getGalleryImages = async (): Promise<CloudflareImage[]> => {
   }
 };
 
-// Legacy imageData array - now unused but kept for reference
-export const imageData = [
-  // This array is no longer used since we're fetching dynamically from Cloudflare Images
-  // Images are now automatically loaded from your Cloudflare Images account
-];
+// All images are now dynamically loaded from Cloudflare Images

@@ -74,9 +74,6 @@ const Hero = () => {
       )}
       
       {/* Fallback image when no Cloudflare images are loaded */}
-      {!currentImage && !nextImage && (
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158')] bg-cover bg-center opacity-10"></div>
-      )}
       <div className="container-custom relative z-10">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 animate-fade-in">

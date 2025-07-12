@@ -103,11 +103,14 @@ const CommunityImpact = () => {
             <div>
               <div className="relative">
                 <div className="absolute -top-4 -left-4 w-full h-full bg-ukhamba-teal rounded-lg"></div>
-                <img 
-                  src={impactImage?.fullUrl || "https://images.unsplash.com/photo-1519389950473-47ba0277781c"} 
-                  alt={impactImage?.alt || "Community impact"} 
-                  className="rounded-lg relative z-10"
-                />
+                {impactImage && (
+                  <img 
+                    src={impactImage.fullUrl} 
+                    alt={impactImage.alt || "Community impact"}
+                    loading="lazy"
+                    className="rounded-lg relative z-10 object-cover"
+                  />
+                )}
               </div>
             </div>
           </div>

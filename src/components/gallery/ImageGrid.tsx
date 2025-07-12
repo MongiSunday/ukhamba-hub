@@ -161,7 +161,7 @@ const ImageGrid = () => {
                     onError={(e) => {
                       console.error('Image failed to load:', image.thumbnailUrl);
                       const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder.svg';
+                      target.style.display = 'none';
                     }}
                     onLoad={() => {
                       console.log('Image loaded successfully:', image.thumbnailUrl);

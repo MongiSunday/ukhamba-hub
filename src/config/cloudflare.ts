@@ -9,10 +9,10 @@ export const getCloudflareConfig = async () => {
 
 export const getCloudflareImageUrl = async (imageId: string, variant: string = 'public') => {
   console.warn('getCloudflareImageUrl is deprecated - URLs are now provided directly from the API');
-  return '/placeholder.svg';
+  return '';
 };
 
 export const getCloudflareImageUrlSync = (imageId: string, variant: string = 'public', config: any) => {
   console.warn('getCloudflareImageUrlSync is deprecated - URLs are now provided directly from the API');
-  return '/placeholder.svg';
+  return '';
 };
