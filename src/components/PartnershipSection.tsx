@@ -45,7 +45,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/partnerships" onClick={scrollToTop}>Explore Corporate Partnerships</Link>
+                  <Link to="/corporate-partnerships" onClick={scrollToTop}>Explore Corporate Partnerships</Link>
                 </Button>
               </div>
             </CardContent>
@@ -75,7 +75,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/partnerships" onClick={scrollToTop}>View Sponsorship Opportunities</Link>
+                  <Link to="/program-sponsorships" onClick={scrollToTop}>View Sponsorship Opportunities</Link>
                 </Button>
               </div>
             </CardContent>
@@ -105,7 +105,7 @@ const PartnershipSection = () => {
               </div>
               <div className="mt-6">
                 <Button className="w-full bg-ukhamba-terracotta hover:bg-ukhamba-terracotta/90 text-white" asChild>
-                  <Link to="/partnerships" onClick={scrollToTop}>Discuss Grant Opportunities</Link>
+                  <Link to="/grant-collaborations" onClick={scrollToTop}>Discuss Grant Opportunities</Link>
                 </Button>
               </div>
             </CardContent>

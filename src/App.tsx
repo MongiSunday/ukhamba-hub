@@ -10,7 +10,9 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Programs from "./pages/Programs";
 import GetInvolved from "./pages/GetInvolved";
-import Partnerships from "./pages/Partnerships";
+import CorporatePartnerships from "./pages/CorporatePartnerships";
+import ProgramSponsorships from "./pages/ProgramSponsorships";
+import GrantCollaborations from "./pages/GrantCollaborations";
 import Donations from "./pages/Donations";
 import Contact from "./pages/Contact";
 import Gallery from "./pages/Gallery";
@@ -41,7 +43,9 @@ const App = () => {
             <Route path="/programs" element={<Programs />} />
             <Route path="/programs/:programId" element={<ProgramDetailPage />} />
             <Route path="/get-involved" element={<GetInvolved />} />
-            <Route path="/partnerships" element={<Partnerships />} />
+            <Route path="/corporate-partnerships" element={<CorporatePartnerships />} />
+            <Route path="/program-sponsorships" element={<ProgramSponsorships />} />
+            <Route path="/grant-collaborations" element={<GrantCollaborations />} />
             <Route path="/donate" element={<Donations />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/gallery" element={<Gallery />} />
