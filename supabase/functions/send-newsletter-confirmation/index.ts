@@ -49,7 +49,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Also notify organization about new subscriber
     await resend.emails.send({
       from: "Ukhamba <onboarding@resend.dev>",
-      to: ["info@ukhamba.org"], // Replace with your organization email
+      to: ["realvisionstreaming@gmail.com"], // Replace with your organization email
+      reply_to: email,
       subject: "New Newsletter Subscription",
       html: `
         <h2>New Newsletter Subscription</h2>
