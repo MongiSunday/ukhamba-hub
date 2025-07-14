@@ -34,7 +34,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification email to organization
     const notificationResponse = await resend.emails.send({
       from: "Ukhamba <onboarding@resend.dev>",
-      to: ["donations@ukhamba.org"], // Replace with your donations email
+      to: ["realvisionstreaming@gmail.com"], // Replace with your donations email
+      reply_to: email,
       subject: `New Donation: R${amount} (${donationType})`,
       html: `
         <h2>New Donation Received</h2>
